@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Stylized N letter -->
+    <!-- Left vertical stroke -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4,4 L7,4 L7,20 L4,20 Z" />
+    
+    <!-- Diagonal stroke connecting left to right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4,4 L7,4 L20,17 L20,20 L17,20 L4,7 Z" />
+    
+    <!-- Right vertical stroke -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17,4 L20,4 L20,20 L17,20 Z" />
+    
+</vector>
+

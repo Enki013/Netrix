@@ -1,0 +1,115 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+}
+
+android {
+    namespace 'com.enki.netrix'
+    compileSdk 36
+    ndkVersion "28.2.13676358"
+    
+    // NDK/CMake for native NFQUEUE support
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
+    defaultConfig {
+        applicationId 'com.enki.netrix'
+        minSdk 24
+        targetSdk 35
+        versionCode 2
+        versionName '1.0.0-beta.3'
+        
+        // Native ABI filters
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+        }
+        
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++17"
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+            debuggable true
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    buildFeatures {
+        compose true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    
+    // Copy daemon executable to assets after native build
+    applicationVariants.all { variant ->
+        def variantName = variant.name.capitalize()
+        
+        tasks.register("copyDaemonTo${variantName}Assets") {
+            description = "Copy NFQUEUE daemon to assets for ${variant.name}"
+            
+            doLast {
+                def abis = ['arm64-v8a', 'armeabi-v7a', 'x86_64']
+                abis.each { abi ->
+                    def daemonSrc = file("${buildDir}/intermediates/cmake/${variant.name}/obj/${abi}/nfqueue_daemon")
+                    def assetsDir = file("src/main/assets/daemon/${abi}")
+                    
+                    if (daemonSrc.exists()) {
+                        assetsDir.mkdirs()
+                        copy {
+                            from daemonSrc
+                            into assetsDir
+                            rename { 'nfqueue_daemon' }
+                        }
+                        println "Copied daemon for ${abi}"
+                    }
+                }
+            }
+        }
+        
+        // Run after native build
+        tasks.findByName("externalNativeBuild${variantName}")?.finalizedBy("copyDaemonTo${variantName}Assets")
+    }
+}
+
+dependencies {
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.activity.compose
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.ui
+    implementation libs.androidx.ui.graphics
+    implementation libs.androidx.ui.tooling.preview
+    implementation libs.androidx.material3
+    
+    implementation 'androidx.navigation:navigation-compose:2.7.7'
+    implementation 'androidx.compose.material:material-icons-extended:1.6.7'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.0'
+    implementation 'androidx.core:core-splashscreen:1.2.0'
+    
+    debugImplementation libs.androidx.ui.tooling
+    debugImplementation libs.androidx.ui.test.manifest
+}

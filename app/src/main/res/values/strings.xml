@@ -1,0 +1,142 @@
+<resources>
+    <string name="app_name">Netrix</string>
+    
+    <!-- Navigation -->
+    <string name="nav_back">Back</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_logs">Logs</string>
+    
+    <!-- Home Screen - VPN States -->
+    <string name="vpn_connected">DPI Blocks Removed</string>
+    <string name="vpn_connecting">Connecting…</string>
+    <string name="vpn_disconnected">Tap to Start</string>
+    <string name="vpn_error">An Error Occurred</string>
+    
+    <string name="vpn_connected_subtitle">All sites accessible</string>
+    <string name="vpn_connected_root_subtitle">Root mode active (kernel level)</string>
+    <string name="vpn_connecting_subtitle">Please wait</string>
+    <string name="vpn_disconnected_subtitle">Netrix is disabled</string>
+    <string name="vpn_error_subtitle">Check settings</string>
+    
+    <!-- Home Screen - Info Card -->
+    <string name="info_how_it_works">How Does It Work?</string>
+    <string name="info_description">Netrix bypasses DPI systems by fragmenting your internet traffic. It splits SNI information to bypass HTTPS blocks.</string>
+    
+    <!-- Splash Screen -->
+    <string name="splash_subtitle">Bypass DPI Blocks</string>
+    
+    <!-- Connection Status Card -->
+    <string name="status_connected">Connected</string>
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="status_error">Error</string>
+    
+    <string name="stat_packets">Packets</string>
+    <string name="stat_download">Download</string>
+    <string name="stat_upload">Upload</string>
+    
+    <!-- Settings Screen - Sections -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_bypass_method">Bypass Method</string>
+    <string name="settings_advanced">Advanced</string>
+    <string name="settings_dns_connection">DNS &amp; Connection</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_exceptions">Exceptions</string>
+    <string name="settings_system">System</string>
+    <string name="settings_about">About</string>
+    <string name="settings_reset_default">Reset to Default</string>
+    
+    <!-- Settings - Bypass Methods -->
+    <string name="bypass_split">Split</string>
+    <string name="bypass_disorder">Disorder</string>
+    <string name="bypass_fake">Fake</string>
+    <string name="bypass_split_reverse">Split Reverse</string>
+    <string name="bypass_disorder_reverse">Disorder Reverse</string>
+    
+    <string name="bypass_https_desync">HTTPS Desync</string>
+    <string name="bypass_https_desync_desc">Process secure connections (TLS)</string>
+    <string name="bypass_http_desync">HTTP Desync</string>
+    <string name="bypass_http_desync_desc">Process unencrypted connections</string>
+    
+    <!-- Settings - Advanced -->
+    <string name="advanced_split_position">Split Position</string>
+    <string name="advanced_split_position_value">%d. byte</string>
+    <string name="advanced_fragment_count">Fragment Count</string>
+    <string name="advanced_fake_hex">Fake Hex Data</string>
+    <string name="advanced_delay">Delay (ms)</string>
+    <string name="advanced_host_mixing">Host Mixing</string>
+    <string name="advanced_host_mixing_desc">Host → hoSt</string>
+    
+    <!-- Settings - DNS & Connection -->
+    <string name="dns_custom">Custom DNS</string>
+    <string name="dns_custom_desc">Ad blocking and privacy</string>
+    <string name="dns_adguard">AdGuard</string>
+    <string name="dns_controld">Control D</string>
+    <string name="dns_cloudflare">Cloudflare</string>
+    <string name="quic_block">Block QUIC</string>
+    <string name="quic_block_desc">YouTube optimization</string>
+    <string name="tcp_nodelay">TCP NoDelay</string>
+    <string name="tcp_nodelay_desc">Send packets without buffering</string>
+    
+    <!-- Settings - Appearance / Themes -->
+    <string name="theme_system">System</string>
+    <string name="theme_amoled">Amoled</string>
+    <string name="theme_ocean">🌊 Ocean</string>
+    <string name="theme_forest">🌲 Forest</string>
+    <string name="theme_sunset">🌅 Sunset</string>
+    <string name="theme_lavender">💜 Lavender</string>
+    
+    <!-- Settings - Whitelist -->
+    <string name="whitelist_title">Whitelist</string>
+    <string name="whitelist_desc">Sites you want to exclude</string>
+    
+    <!-- Settings - System -->
+    <string name="root_mode">Root Mode (Beta)</string>
+    <string name="root_mode_desc">Kernel level bypass (NFQUEUE)</string>
+    <string name="root_required">Root access required</string>
+    <string name="daemon_not_found">Daemon binary not found</string>
+    <string name="logging">Logging</string>
+    <string name="logging_desc">Debug records</string>
+    
+    <!-- Settings - About -->
+    <string name="developer">Developer</string>
+    <string name="github">Github</string>
+    <string name="github_desc">Open source repository</string>
+    
+    <!-- Whitelist Screen -->
+    <string name="whitelist_screen_title">Exceptions</string>
+    <string name="whitelist_search">Search exceptions…</string>
+    <string name="whitelist_no_results">No results found</string>
+    <string name="whitelist_add_site">Add Site</string>
+    <string name="whitelist_edit_site">Edit Site</string>
+    <string name="whitelist_domain_hint">Domain (e.g. google.com)</string>
+    <string name="whitelist_add_note">DPI bypass will be disabled for this site.</string>
+    <string name="whitelist_add">Add</string>
+    <string name="whitelist_save">Save</string>
+    <string name="whitelist_cancel">Cancel</string>
+    
+    <!-- Log Screen -->
+    <string name="log_title">Log Records</string>
+    <string name="log_save">Save</string>
+    <string name="log_clear">Clear</string>
+    <string name="log_saved">Logs saved</string>
+    <string name="log_save_error">Save error: %s</string>
+    
+    <!-- VPN Service -->
+    <string name="vpn_notification_title">Netrix Active</string>
+    <string name="vpn_notification_text">DPI blocks are being removed</string>
+    <string name="vpn_notification_channel">Netrix Service</string>
+    <string name="vpn_notification_channel_desc">Background VPN service</string>
+    <string name="vpn_notification_stop">Stop</string>
+    <string name="vpn_notification_settings">Settings</string>
+    
+    <!-- Root Mode (NFQUEUE) -->
+    <string name="root_no_access">No root access</string>
+    <string name="root_daemon_error">Daemon binary not found or failed to start</string>
+    <string name="root_nfqueue_starting">Starting NFQUEUE…</string>
+    <string name="root_nfqueue_failed">NFQUEUE failed to start</string>
+    <string name="root_bypass_active">DPI bypass active - kernel mode</string>
+    <string name="root_connection_lost">Connection lost</string>
+    <string name="root_notification_title">Netrix (Root)</string>
+    <string name="root_error_prefix">Error: %s</string>
+</resources>

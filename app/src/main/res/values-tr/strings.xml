@@ -1,0 +1,142 @@
+<resources>
+    <string name="app_name">Netrix</string>
+    
+    <!-- Navigation -->
+    <string name="nav_back">Geri</string>
+    <string name="nav_settings">Ayarlar</string>
+    <string name="nav_logs">Loglar</string>
+    
+    <!-- Home Screen - VPN States -->
+    <string name="vpn_connected">DPI Engelleri Kaldırıldı</string>
+    <string name="vpn_connecting">Bağlanıyor…</string>
+    <string name="vpn_disconnected">Başlatmak İçin Dokunun</string>
+    <string name="vpn_error">Bir Hata Oluştu</string>
+    
+    <string name="vpn_connected_subtitle">Tüm siteler erişilebilir</string>
+    <string name="vpn_connected_root_subtitle">Root mod aktif (kernel seviye)</string>
+    <string name="vpn_connecting_subtitle">Lütfen bekleyin</string>
+    <string name="vpn_disconnected_subtitle">Netrix devre dışı</string>
+    <string name="vpn_error_subtitle">Ayarları kontrol edin</string>
+    
+    <!-- Home Screen - Info Card -->
+    <string name="info_how_it_works">Nasıl Çalışır?</string>
+    <string name="info_description">Netrix, internet trafiğinizi parçalayarak DPI sistemlerini atlatır. SNI bilgisini bölerek HTTPS engellerini aşar.</string>
+    
+    <!-- Splash Screen -->
+    <string name="splash_subtitle">DPI Engellerini Kaldır</string>
+    
+    <!-- Connection Status Card -->
+    <string name="status_connected">Bağlı</string>
+    <string name="status_connecting">Bağlanıyor…</string>
+    <string name="status_disconnected">Bağlı Değil</string>
+    <string name="status_error">Hata</string>
+    
+    <string name="stat_packets">Paketler</string>
+    <string name="stat_download">İndirme</string>
+    <string name="stat_upload">Yükleme</string>
+    
+    <!-- Settings Screen - Sections -->
+    <string name="settings_title">Ayarlar</string>
+    <string name="settings_bypass_method">Bypass Yöntemi</string>
+    <string name="settings_advanced">Gelişmiş</string>
+    <string name="settings_dns_connection">DNS ve Bağlantı</string>
+    <string name="settings_appearance">Görünüm</string>
+    <string name="settings_exceptions">İstisnalar</string>
+    <string name="settings_system">Sistem</string>
+    <string name="settings_about">Hakkında</string>
+    <string name="settings_reset_default">Varsayılan Ayarlara Dön</string>
+    
+    <!-- Settings - Bypass Methods -->
+    <string name="bypass_split">Split</string>
+    <string name="bypass_disorder">Disorder</string>
+    <string name="bypass_fake">Fake</string>
+    <string name="bypass_split_reverse">Split Ters</string>
+    <string name="bypass_disorder_reverse">Disorder Ters</string>
+    
+    <string name="bypass_https_desync">HTTPS Desync</string>
+    <string name="bypass_https_desync_desc">Güvenli bağlantıları (TLS) işle</string>
+    <string name="bypass_http_desync">HTTP Desync</string>
+    <string name="bypass_http_desync_desc">Şifresiz bağlantıları işle</string>
+    
+    <!-- Settings - Advanced -->
+    <string name="advanced_split_position">Split Pozisyonu</string>
+    <string name="advanced_split_position_value">%d. byte</string>
+    <string name="advanced_fragment_count">Parça Sayısı</string>
+    <string name="advanced_fake_hex">Fake Hex Verisi</string>
+    <string name="advanced_delay">Gecikme (ms)</string>
+    <string name="advanced_host_mixing">Host Karıştırma</string>
+    <string name="advanced_host_mixing_desc">Host → hoSt</string>
+    
+    <!-- Settings - DNS & Connection -->
+    <string name="dns_custom">Özel DNS</string>
+    <string name="dns_custom_desc">Reklam engelleme ve gizlilik</string>
+    <string name="dns_adguard">AdGuard</string>
+    <string name="dns_controld">Control D</string>
+    <string name="dns_cloudflare">Cloudflare</string>
+    <string name="quic_block">QUIC Engelle</string>
+    <string name="quic_block_desc">YouTube hızlandırma</string>
+    <string name="tcp_nodelay">TCP NoDelay</string>
+    <string name="tcp_nodelay_desc">Paketleri bekletmeden gönder</string>
+    
+    <!-- Settings - Appearance / Themes -->
+    <string name="theme_system">Sistem</string>
+    <string name="theme_amoled">Amoled</string>
+    <string name="theme_ocean">🌊 Okyanus</string>
+    <string name="theme_forest">🌲 Orman</string>
+    <string name="theme_sunset">🌅 Gün Batımı</string>
+    <string name="theme_lavender">💜 Lavanta</string>
+    
+    <!-- Settings - Whitelist -->
+    <string name="whitelist_title">Beyaz Liste</string>
+    <string name="whitelist_desc">Harici tutmak istediğiniz siteler</string>
+    
+    <!-- Settings - System -->
+    <string name="root_mode">Root Modu (Beta)</string>
+    <string name="root_mode_desc">Kernel seviyesi bypass (NFQUEUE)</string>
+    <string name="root_required">Root erişimi gerekli</string>
+    <string name="daemon_not_found">Daemon binary bulunamadı</string>
+    <string name="logging">Loglama</string>
+    <string name="logging_desc">Hata ayıklama kayıtları</string>
+    
+    <!-- Settings - About -->
+    <string name="developer">Geliştirici</string>
+    <string name="github">Github</string>
+    <string name="github_desc">Açık kaynak kod deposu</string>
+    
+    <!-- Whitelist Screen -->
+    <string name="whitelist_screen_title">İstisnalar</string>
+    <string name="whitelist_search">İstisnalarda ara…</string>
+    <string name="whitelist_no_results">Sonuç bulunamadı</string>
+    <string name="whitelist_add_site">Site Ekle</string>
+    <string name="whitelist_edit_site">Site Düzenle</string>
+    <string name="whitelist_domain_hint">Domain (örn: google.com)</string>
+    <string name="whitelist_add_note">Bu site için DPI bypass devre dışı bırakılacak.</string>
+    <string name="whitelist_add">Ekle</string>
+    <string name="whitelist_save">Kaydet</string>
+    <string name="whitelist_cancel">İptal</string>
+    
+    <!-- Log Screen -->
+    <string name="log_title">Log Kayıtları</string>
+    <string name="log_save">Kaydet</string>
+    <string name="log_clear">Temizle</string>
+    <string name="log_saved">Loglar kaydedildi</string>
+    <string name="log_save_error">Kaydetme hatası: %s</string>
+    
+    <!-- VPN Service -->
+    <string name="vpn_notification_title">Netrix Aktif</string>
+    <string name="vpn_notification_text">DPI engelleri kaldırılıyor</string>
+    <string name="vpn_notification_channel">Netrix Servisi</string>
+    <string name="vpn_notification_channel_desc">Arka plan VPN servisi</string>
+    <string name="vpn_notification_stop">Durdur</string>
+    <string name="vpn_notification_settings">Ayarlar</string>
+    
+    <!-- Root Mode (NFQUEUE) -->
+    <string name="root_no_access">Root erişimi yok</string>
+    <string name="root_daemon_error">Daemon binary bulunamadı veya başlatılamadı</string>
+    <string name="root_nfqueue_starting">NFQUEUE başlatılıyor…</string>
+    <string name="root_nfqueue_failed">NFQUEUE başlatılamadı</string>
+    <string name="root_bypass_active">DPI bypass aktif - kernel modu</string>
+    <string name="root_connection_lost">Bağlantı kesildi</string>
+    <string name="root_notification_title">Netrix (Root)</string>
+    <string name="root_error_prefix">Hata: %s</string>
+</resources>
