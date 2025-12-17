@@ -1,0 +1,13 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.Netrix" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.Netrix.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FAFDFC</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_netrix</item>
+        <item name="windowSplashScreenAnimationDuration">300</item>
+        <item name="postSplashScreenTheme">@style/Theme.Netrix</item>
+    </style>
+</resources>

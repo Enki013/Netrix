@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Adaptive icon foreground - 108x108 with safe zone 66x66 centered -->
+    <!-- N letter with balanced padding -->
+    
+    <!-- Stylized N letter -->
+    <!-- Left vertical stroke -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,32 L41,32 L41,76 L34,76 Z" />
+    
+    <!-- Diagonal stroke connecting left to right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,32 L41,32 L74,69 L74,76 L67,76 L34,39 Z" />
+    
+    <!-- Right vertical stroke -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M67,32 L74,32 L74,76 L67,76 Z" />
+    
+</vector>
+
