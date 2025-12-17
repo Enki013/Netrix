@@ -40,3 +40,5 @@ google-services.json
 # Editor/IDE
 .acside/
 .cursor/
+
+keystore_base64.txt

@@ -4,6 +4,17 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// Load version from versions.properties
+def versionPropsFile = rootProject.file("versions.properties")
+def versionProps = new Properties()
+if (versionPropsFile.exists()) {
+    versionProps.load(new FileInputStream(versionPropsFile))
+}
+def versionMajor = versionProps.getProperty("versionMajor", "1").toInteger()
+def versionMinor = versionProps.getProperty("versionMinor", "0").toInteger()
+def versionPatch = versionProps.getProperty("versionPatch", "0").toInteger()
+def appVersionCode = versionProps.getProperty("versionCode", "1").toInteger()
+
 android {
     namespace 'com.enki.netrix'
     compileSdk 36
@@ -21,8 +32,8 @@ android {
         applicationId 'com.enki.netrix'
         minSdk 24
         targetSdk 35
-        versionCode 2
-        versionName '1.0.0-beta.3'
+        versionCode appVersionCode
+        versionName "${versionMajor}.${versionMinor}.${versionPatch}"
         
         // Native ABI filters
         ndk {
