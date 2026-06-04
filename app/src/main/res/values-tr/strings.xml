@@ -50,8 +50,6 @@
     <string name="bypass_split">Split</string>
     <string name="bypass_disorder">Disorder</string>
     <string name="bypass_fake">Fake</string>
-    <string name="bypass_split_reverse">Split Ters</string>
-    <string name="bypass_disorder_reverse">Disorder Ters</string>
     
     <string name="bypass_https_desync">HTTPS Desync</string>
     <string name="bypass_https_desync_desc">Güvenli bağlantıları (TLS) işle</string>
@@ -81,10 +79,10 @@
     <!-- Settings - Appearance / Themes -->
     <string name="theme_system">Sistem</string>
     <string name="theme_amoled">Amoled</string>
-    <string name="theme_ocean">🌊 Okyanus</string>
-    <string name="theme_forest">🌲 Orman</string>
-    <string name="theme_sunset">🌅 Gün Batımı</string>
-    <string name="theme_lavender">💜 Lavanta</string>
+    <string name="theme_ocean">Okyanus</string>
+    <string name="theme_forest">Orman</string>
+    <string name="theme_sunset">Gün Batımı</string>
+    <string name="theme_lavender">Lavanta</string>
     
     <!-- Settings - Whitelist -->
     <string name="whitelist_title">Beyaz Liste</string>

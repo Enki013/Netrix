@@ -44,9 +44,7 @@ object SettingsRepository {
             tcpFastOpen = prefs.getBoolean("tcp_fast_open", false),
             enableTcpNodelay = prefs.getBoolean("tcp_nodelay", true),
             useRootMode = prefs.getBoolean("use_root_mode", false),
-            desyncMethod = try {
-                DesyncMethod.valueOf(prefs.getString("desync_method", "SPLIT") ?: "SPLIT")
-            } catch (e: Exception) { DesyncMethod.SPLIT },
+            desyncMethod = DesyncMethod.fromPreference(prefs.getString("desync_method", "SPLIT")),
             desyncHttp = prefs.getBoolean("desync_http", true),
             desyncHttps = prefs.getBoolean("desync_https", true),
             firstPacketSize = prefs.getInt("first_packet_size", 2),

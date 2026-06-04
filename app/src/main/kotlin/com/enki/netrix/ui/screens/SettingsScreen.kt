@@ -93,7 +93,6 @@ fun SettingsScreen(
             item {
                 SettingsSection(title = stringResource(R.string.settings_bypass_method)) {
                     Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        // First row: Normal methods
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(
                                 selected = settings.desyncMethod == DesyncMethod.SPLIT,
@@ -114,22 +113,6 @@ fun SettingsScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        // Second row: Reverse methods (GoodbyeDPI compatible)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = settings.desyncMethod == DesyncMethod.SPLIT_REVERSE,
-                                onClick = { updateSettings(settings.copy(desyncMethod = DesyncMethod.SPLIT_REVERSE)) },
-                                label = { Text(stringResource(R.string.bypass_split_reverse)) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            FilterChip(
-                                selected = settings.desyncMethod == DesyncMethod.DISORDER_REVERSE,
-                                onClick = { updateSettings(settings.copy(desyncMethod = DesyncMethod.DISORDER_REVERSE)) },
-                                label = { Text(stringResource(R.string.bypass_disorder_reverse)) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
                     }
                     SettingsSwitchRow(Icons.Default.Https, stringResource(R.string.bypass_https_desync), stringResource(R.string.bypass_https_desync_desc), settings.desyncHttps) { updateSettings(settings.copy(desyncHttps = it)) }
                     SettingsSwitchRow(Icons.Default.Http, stringResource(R.string.bypass_http_desync), stringResource(R.string.bypass_http_desync_desc), settings.desyncHttp) { updateSettings(settings.copy(desyncHttp = it)) }
@@ -139,12 +122,12 @@ fun SettingsScreen(
             // === 2. ADVANCED SETTINGS ===
             item {
                 SettingsSection(title = stringResource(R.string.settings_advanced)) {
-                    // Split position: For SPLIT, SPLIT_REVERSE and FAKE
-                    if (settings.desyncMethod in listOf(DesyncMethod.SPLIT, DesyncMethod.SPLIT_REVERSE, DesyncMethod.FAKE)) {
+                    // Split position: For SPLIT and FAKE
+                    if (settings.desyncMethod in listOf(DesyncMethod.SPLIT, DesyncMethod.FAKE)) {
                         SettingsSliderRow(stringResource(R.string.advanced_split_position), settings.firstPacketSize.toFloat(), 1f..10f, { updateSettings(settings.copy(firstPacketSize = it.toInt())) }, "${settings.firstPacketSize}. byte")
                     }
-                    // Fragment count: For DISORDER and DISORDER_REVERSE
-                    if (settings.desyncMethod in listOf(DesyncMethod.DISORDER, DesyncMethod.DISORDER_REVERSE)) {
+                    // Fragment count: For DISORDER
+                    if (settings.desyncMethod == DesyncMethod.DISORDER) {
                         SettingsSliderRow(stringResource(R.string.advanced_fragment_count), settings.splitCount.toFloat(), 2f..20f, { updateSettings(settings.copy(splitCount = it.toInt())) }, "${settings.splitCount}")
                     }
                     // Fake hex: Only for FAKE method

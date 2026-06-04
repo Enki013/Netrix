@@ -50,8 +50,6 @@
     <string name="bypass_split">Split</string>
     <string name="bypass_disorder">Disorder</string>
     <string name="bypass_fake">Fake</string>
-    <string name="bypass_split_reverse">Split Reverse</string>
-    <string name="bypass_disorder_reverse">Disorder Reverse</string>
     
     <string name="bypass_https_desync">HTTPS Desync</string>
     <string name="bypass_https_desync_desc">Process secure connections (TLS)</string>
@@ -81,10 +79,10 @@
     <!-- Settings - Appearance / Themes -->
     <string name="theme_system">System</string>
     <string name="theme_amoled">Amoled</string>
-    <string name="theme_ocean">🌊 Ocean</string>
-    <string name="theme_forest">🌲 Forest</string>
-    <string name="theme_sunset">🌅 Sunset</string>
-    <string name="theme_lavender">💜 Lavender</string>
+    <string name="theme_ocean">Ocean</string>
+    <string name="theme_forest">Forest</string>
+    <string name="theme_sunset">Sunset</string>
+    <string name="theme_lavender">Lavender</string>
     
     <!-- Settings - Whitelist -->
     <string name="whitelist_title">Whitelist</string>

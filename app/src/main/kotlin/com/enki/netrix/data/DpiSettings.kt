@@ -195,6 +195,26 @@ data class DpiSettings(
 }
 
 enum class BypassMode { FULL }
-enum class DesyncMethod { SPLIT, SPLIT_REVERSE, DISORDER, DISORDER_REVERSE, FAKE }
+enum class DesyncMethod {
+    SPLIT,
+    SPLIT_REVERSE,
+    DISORDER,
+    DISORDER_REVERSE,
+    FAKE;
+
+    fun withoutReverse(): DesyncMethod = when (this) {
+        SPLIT_REVERSE -> SPLIT
+        DISORDER_REVERSE -> DISORDER
+        else -> this
+    }
+
+    companion object {
+        fun fromPreference(value: String?): DesyncMethod = try {
+            valueOf(value ?: SPLIT.name).withoutReverse()
+        } catch (_: Exception) {
+            SPLIT
+        }
+    }
+}
 enum class VpnState { DISCONNECTED, CONNECTING, CONNECTED, ERROR }
 enum class AppTheme { SYSTEM, AMOLED, OCEAN, FOREST, SUNSET, LAVENDER }
