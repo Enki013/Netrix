@@ -1136,13 +1136,11 @@ int dpi_raw_socket_init(void) {
     }
     LOGI("IP_HDRINCL set OK");
     
-    // Set socket mark (so iptables can identify our packets)
-    if (setsockopt(g_bypass.raw_socket, SOL_SOCKET, SO_MARK, &g_bypass.packet_mark, sizeof(g_bypass.packet_mark)) < 0) {
-        LOGI("Warning: Failed to set SO_MARK: %s (may cause packet loops)", strerror(errno));
-        // Not fatal, continue without mark
-    } else {
-        LOGI("SO_MARK set to 0x%X", g_bypass.packet_mark);
-    }
+    // Do not set SO_MARK for the raw socket on Android. fwmark participates
+    // in Android network selection; arbitrary marks can route to no network
+    // and make sendto() fail with ENETUNREACH. The daemon's iptables owner
+    // rule excludes UID 0 packets from NFQUEUE instead.
+    LOGI("SO_MARK disabled; using root-owner iptables bypass for raw packets");
     
     g_bypass.raw_socket_initialized = true;
     LOGI("=== RAW SOCKET READY: fd=%d ===", g_bypass.raw_socket);
@@ -1217,10 +1215,8 @@ void dpi_set_packet_mark(uint32_t mark) {
     pthread_mutex_lock(&g_bypass.lock);
     g_bypass.packet_mark = mark;
     
-    // Update socket option if already initialized
-    if (g_bypass.raw_socket >= 0) {
-        setsockopt(g_bypass.raw_socket, SOL_SOCKET, SO_MARK, &mark, sizeof(mark));
-    }
+    // Intentionally do not apply SO_MARK on Android; see dpi_raw_socket_init().
+    (void)mark;
     
     pthread_mutex_unlock(&g_bypass.lock);
 }

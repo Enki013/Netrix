@@ -113,7 +113,13 @@ android {
         if (externalNativeTask != null) {
             tasks.named("copyDaemonTo${variantName}Assets").configure { dependsOn externalNativeTask }
         }
-        tasks.findByName("merge${variantName}Assets")?.dependsOn("copyDaemonTo${variantName}Assets")
+        tasks.matching { it.name == "merge${variantName}Assets" }.configureEach {
+            dependsOn("copyDaemonTo${variantName}Assets")
+            // The copy task intentionally updates src/main/assets from native outputs.
+            // Force asset merge to re-snapshot those files in the same build; otherwise
+            // AGP can package the daemon from the previous invocation.
+            outputs.upToDateWhen { false }
+        }
     }
 }
 

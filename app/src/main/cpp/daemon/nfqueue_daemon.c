@@ -442,8 +442,10 @@ static int parse_and_execute_command(const char* cmd, char* response, size_t res
     return 0;
 }
 
-// Packet mark used by our raw socket (must match dpi_bypass.c)
-#define OUR_PACKET_MARK 0x10DEAD
+// Root-owned raw-socket packets are accepted before NFQUEUE to avoid
+// re-capturing daemon-injected fragments. Do not use SO_MARK for this on
+// Android: arbitrary marks participate in Android's fwmark routing and can
+// make raw sendto() fail with ENETUNREACH.
 
 /**
  * Setup iptables rules
@@ -462,20 +464,16 @@ static int setup_iptables(void) {
     }
     LOG("iptables found OK");
 
-    // IMPORTANT: First rule - ACCEPT packets with our mark (avoid re-capturing our own injected packets)
-    char mark_cmd[256];
-    snprintf(mark_cmd, sizeof(mark_cmd),
-             "iptables -I OUTPUT -m mark --mark 0x%X -j ACCEPT 2>&1",
-             OUR_PACKET_MARK);
-    LOG("Running: %s", mark_cmd);
-    int ret0 = system(mark_cmd);
-    LOG("Mark rule result: %d", ret0);
+    // IMPORTANT: First rule - ACCEPT root-owned packets from this daemon's
+    // raw socket injection path. This prevents feedback loops without using
+    // SO_MARK, which breaks Android routing for arbitrary marks.
+    int ret0 = system("iptables -I OUTPUT -m owner --uid-owner 0 -j ACCEPT 2>&1");
+    LOG("Root owner bypass rule result: %d", ret0);
     if (ret0 != 0) {
-        LOG("Warning: Could not add mark exception rule (may need xt_mark module)");
-        // Continue anyway, mark may not be supported on this kernel
+        LOG("Warning: Could not add root owner bypass rule (raw injections may loop)");
     }
 
-    // Add NFQUEUE rules for HTTPS and HTTP (after mark exception)
+    // Add NFQUEUE rules for HTTPS and HTTP (after daemon bypass exception)
     LOG("Adding NFQUEUE rule for port 443...");
     int ret1 = system("iptables -A OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num 0 --queue-bypass 2>&1");
     LOG("Port 443 rule result: %d", ret1);
@@ -502,7 +500,7 @@ static int setup_iptables(void) {
     LOG("Verifying iptables rules...");
     system("iptables -L OUTPUT -n -v 2>&1 | head -10");
 
-    LOG("=== IPTABLES SETUP COMPLETE (mark=0x%X) ===", OUR_PACKET_MARK);
+    LOG("=== IPTABLES SETUP COMPLETE (root-owner bypass active) ===");
     return 0;
 }
 
@@ -512,14 +510,10 @@ static int setup_iptables(void) {
 static int clear_iptables(void) {
     LOG("Clearing iptables...");
 
-    char mark_cmd[256];
-    snprintf(mark_cmd, sizeof(mark_cmd),
-             "iptables -D OUTPUT -m mark --mark 0x%X -j ACCEPT 2>/dev/null",
-             OUR_PACKET_MARK);
-
-    // Remove NFQUEUE rules (run multiple times to clear all)
+    // Remove NFQUEUE/bypass rules (run multiple times to clear all)
     for (int i = 0; i < 5; i++) {
-        system(mark_cmd);
+        system("iptables -D OUTPUT -m owner --uid-owner 0 -j ACCEPT 2>/dev/null");
+        system("iptables -D OUTPUT -m mark --mark 0x10DEAD -j ACCEPT 2>/dev/null");
         system("iptables -D OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num 0 2>/dev/null");
         system("iptables -D OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num 0 --queue-bypass 2>/dev/null");
         system("iptables -D OUTPUT -p tcp --dport 80 -j NFQUEUE --queue-num 0 2>/dev/null");

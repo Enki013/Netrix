@@ -199,7 +199,8 @@ int nfqueue_start(void) {
                 if (err->error != 0) {
                     LOGE("Netlink error: %d", err->error);
                 }
-            } else if ((nlh->nlmsg_type & 0xFF) == NFNL_SUBSYS_QUEUE) {
+            } else if ((nlh->nlmsg_type >> 8) == NFNL_SUBSYS_QUEUE &&
+                       (nlh->nlmsg_type & 0xFF) == NFQNL_MSG_PACKET) {
                 NfqueuePacket pkt;
                 memset(&pkt, 0, sizeof(pkt));
                 
@@ -211,8 +212,13 @@ int nfqueue_start(void) {
                     }
                     
                     if (verdict != NFQUEUE_STOLEN) {
-                        send_verdict(pkt.packet_id, verdict, NULL, 0);
+                        if (send_verdict(pkt.packet_id, verdict, NULL, 0) < 0) {
+                            LOGE("Failed to send verdict for packet id=%u", pkt.packet_id);
+                        }
                     }
+                } else {
+                    LOGE("Failed to parse NFQUEUE packet message (type=0x%X, len=%u)",
+                         nlh->nlmsg_type, nlh->nlmsg_len);
                 }
             }
             
