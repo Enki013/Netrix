@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Foreground service for NFQUEUE-based DPI bypass.
@@ -56,18 +58,13 @@ class NfqueueService : Service() {
          * Check if device is rooted and daemon is available
          */
         fun isAvailable(): Boolean {
-            return RootHelper.isRooted() && DaemonController.isAvailable()
+            return RootHelper.hasSuBinary() && DaemonController.isAvailable()
         }
         
         /**
          * Start the service
          */
         fun start(context: Context) {
-            if (!isAvailable()) {
-                Log.e(TAG, "NFQUEUE not available (root required)")
-                return
-            }
-            
             val intent = Intent(context, NfqueueService::class.java).apply {
                 action = ACTION_START
             }
@@ -137,8 +134,13 @@ class NfqueueService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
     
     override fun onDestroy() {
-        serviceScope.launch {
-            stopNfqueue()
+        runBlocking(Dispatchers.IO) {
+            withTimeoutOrNull(3_000) {
+                // Always attempt daemon cleanup on service teardown, even if the
+                // UI state never reached "running" during a failed startup.
+                runCatching { DaemonController.stopNfqueue() }
+                runCatching { DaemonController.stopDaemon() }
+            }
         }
         serviceScope.cancel()
         super.onDestroy()

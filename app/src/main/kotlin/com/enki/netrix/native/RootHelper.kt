@@ -7,21 +7,25 @@ import java.io.BufferedReader
 import java.io.DataOutputStream
 import java.io.File
 import java.io.InputStreamReader
+import kotlin.concurrent.thread
 
 /**
  * Helper for root operations and iptables management.
- * 
+ *
  * This class provides utilities for:
  * - Checking root access
  * - Executing commands as root
  * - Setting up iptables rules for NFQUEUE
  */
 object RootHelper {
-    
+
     private const val TAG = "RootHelper"
-    
-    // Common su binary locations
+
+    // Common su binary locations. Magisk-on-emulator commonly exposes su via
+    // /system_ext/bin/su or /debug_ramdisk/su, not the older SuperSU paths.
     private val SU_PATHS = listOf(
+        "/system_ext/bin/su",
+        "/debug_ramdisk/su",
         "/system/bin/su",
         "/system/xbin/su",
         "/sbin/su",
@@ -32,40 +36,43 @@ object RootHelper {
         "/data/local/bin/su",
         "/data/local/su"
     )
-    
+
+    private var suPath: String? = null
+
+    private const val ROOT_COMMAND_TIMEOUT_SECONDS = 15L
+
     // NFQUEUE number to use
     const val QUEUE_NUM = 0
-    
+
     // Cache root status
     private var rootChecked = false
     private var isRootAvailable = false
-    
+
     /**
      * Check if device has root access
      * @param forceCheck Force re-check even if cached
      */
     fun isRooted(forceCheck: Boolean = false): Boolean {
         Log.i(TAG, "[DEBUG] isRooted() called, forceCheck=$forceCheck, cached=$rootChecked")
-        
+
         if (rootChecked && !forceCheck) {
             Log.i(TAG, "[DEBUG] Returning cached result: $isRootAvailable")
             return isRootAvailable
         }
-        
+
         // Method 1: Check for su binary
         Log.i(TAG, "[DEBUG] Checking for su binary in known paths...")
-        val foundSuPaths = SU_PATHS.filter { File(it).exists() }
-        val suExists = foundSuPaths.isNotEmpty()
-        
-        if (suExists) {
-            Log.i(TAG, "[DEBUG] Found su at: ${foundSuPaths.joinToString()}")
+        suPath = findSuBinary()
+
+        if (suPath != null) {
+            Log.i(TAG, "[DEBUG] Found su at: $suPath")
         } else {
             Log.w(TAG, "[DEBUG] No su binary found in any path")
             rootChecked = true
             isRootAvailable = false
             return false
         }
-        
+
         // Method 2: Try to execute a simple root command
         Log.i(TAG, "[DEBUG] Trying to execute 'id' as root...")
         isRootAvailable = try {
@@ -77,12 +84,39 @@ object RootHelper {
             e.printStackTrace()
             false
         }
-        
+
         rootChecked = true
         Log.i(TAG, "[DEBUG] Root status determined: $isRootAvailable")
         return isRootAvailable
     }
-    
+
+    /**
+     * Fast non-interactive check: a su binary is present. This does not request
+     * Magisk/Superuser permission and is safe to call from UI code.
+     */
+    fun hasSuBinary(): Boolean = findSuBinary() != null
+
+    /**
+     * Locate an executable su binary without requiring root.
+     */
+    private fun findSuBinary(): String? {
+        suPath?.let { cached ->
+            if (File(cached).let { it.exists() && it.canExecute() }) return cached
+        }
+
+        SU_PATHS.firstOrNull { File(it).let { file -> file.exists() && file.canExecute() } }?.let { return it }
+
+        return try {
+            val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "command -v su 2>/dev/null || which su 2>/dev/null"))
+            val output = BufferedReader(InputStreamReader(process.inputStream)).readText().trim().lineSequence().firstOrNull()
+            process.waitFor()
+            output?.takeIf { it.isNotBlank() && File(it).let { file -> file.exists() && file.canExecute() } }
+        } catch (e: Exception) {
+            Log.w(TAG, "[DEBUG] Could not discover su from PATH: ${e.message}")
+            null
+        }
+    }
+
     /**
      * Execute a command as root
      * @param command Command to execute
@@ -91,36 +125,60 @@ object RootHelper {
     fun executeAsRoot(command: String): CommandResult {
         Log.d(TAG, "[DEBUG] executeAsRoot: $command")
         return try {
-            val process = Runtime.getRuntime().exec("su")
-            
+            val su = suPath ?: findSuBinary() ?: "su"
+            suPath = su
+            val process = Runtime.getRuntime().exec(su)
+
             DataOutputStream(process.outputStream).use { os ->
                 os.writeBytes("$command\n")
                 os.writeBytes("exit\n")
                 os.flush()
             }
-            
+
             val output = StringBuilder()
             val error = StringBuilder()
-            
-            BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    output.appendLine(line)
+
+            val outputThread = thread(start = true) {
+                BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
+                    var line: String?
+                    while (reader.readLine().also { line = it } != null) {
+                        output.appendLine(line)
+                    }
                 }
             }
-            
-            BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    error.appendLine(line)
+            val errorThread = thread(start = true) {
+                BufferedReader(InputStreamReader(process.errorStream)).use { reader ->
+                    var line: String?
+                    while (reader.readLine().also { line = it } != null) {
+                        error.appendLine(line)
+                    }
                 }
             }
-            
-            val exitCode = process.waitFor()
-            
+
+            var exitCode: Int? = null
+            val waitThread = thread(start = true) {
+                exitCode = process.waitFor()
+            }
+            waitThread.join(ROOT_COMMAND_TIMEOUT_SECONDS * 1000)
+            if (waitThread.isAlive) {
+                process.destroy()
+                waitThread.join(500)
+                outputThread.join(500)
+                errorThread.join(500)
+                return CommandResult(
+                    success = false,
+                    exitCode = -1,
+                    output = output.toString().trim(),
+                    error = "Root command timed out after ${ROOT_COMMAND_TIMEOUT_SECONDS}s"
+                )
+            }
+            outputThread.join(500)
+            errorThread.join(500)
+
+            val finalExitCode = exitCode ?: -1
             CommandResult(
-                success = exitCode == 0,
-                exitCode = exitCode,
+                success = finalExitCode == 0,
+                exitCode = finalExitCode,
                 output = output.toString().trim(),
                 error = error.toString().trim()
             )
@@ -134,15 +192,15 @@ object RootHelper {
             )
         }
     }
-    
+
     /**
      * Execute command as root (suspend version)
      */
-    suspend fun executeAsRootAsync(command: String): CommandResult = 
+    suspend fun executeAsRootAsync(command: String): CommandResult =
         withContext(Dispatchers.IO) {
             executeAsRoot(command)
         }
-    
+
     /**
      * Setup iptables rules for NFQUEUE
      * Routes TCP traffic on ports 80 and 443 to NFQUEUE
@@ -152,36 +210,36 @@ object RootHelper {
             Log.e(TAG, "Device is not rooted")
             return false
         }
-        
+
         Log.i(TAG, "Setting up iptables rules for NFQUEUE")
-        
+
         // Clear any existing rules first
         clearIptables()
-        
+
         // Add rules for HTTPS (port 443)
         val https = executeAsRoot(
             "iptables -A OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num $QUEUE_NUM"
         )
-        
+
         // Add rules for HTTP (port 80)
         val http = executeAsRoot(
             "iptables -A OUTPUT -p tcp --dport 80 -j NFQUEUE --queue-num $QUEUE_NUM"
         )
-        
+
         if (!https.success) {
             Log.e(TAG, "Failed to add HTTPS rule: ${https.error}")
             return false
         }
-        
+
         if (!http.success) {
             Log.e(TAG, "Failed to add HTTP rule: ${http.error}")
             return false
         }
-        
+
         Log.i(TAG, "iptables rules set up successfully")
         return true
     }
-    
+
     /**
      * Setup iptables with custom ports
      * @param ports List of destination ports to intercept
@@ -191,24 +249,24 @@ object RootHelper {
             Log.e(TAG, "Device is not rooted")
             return false
         }
-        
+
         clearIptables()
-        
+
         for (port in ports) {
             val result = executeAsRoot(
                 "iptables -A OUTPUT -p tcp --dport $port -j NFQUEUE --queue-num $QUEUE_NUM"
             )
-            
+
             if (!result.success) {
                 Log.e(TAG, "Failed to add rule for port $port: ${result.error}")
                 return false
             }
         }
-        
+
         Log.i(TAG, "iptables rules set up for ports: ${ports.joinToString()}")
         return true
     }
-    
+
     /**
      * Clear NFQUEUE iptables rules
      */
@@ -216,9 +274,9 @@ object RootHelper {
         if (!isRooted()) {
             return false
         }
-        
+
         Log.i(TAG, "Clearing iptables NFQUEUE rules")
-        
+
         // Delete all NFQUEUE rules from OUTPUT chain
         // Run multiple times to clear all matching rules
         repeat(10) {
@@ -229,10 +287,10 @@ object RootHelper {
                 "iptables -D OUTPUT -p tcp --dport 80 -j NFQUEUE --queue-num $QUEUE_NUM 2>/dev/null"
             )
         }
-        
+
         return true
     }
-    
+
     /**
      * List current iptables rules
      */
@@ -240,11 +298,11 @@ object RootHelper {
         if (!isRooted()) {
             return "Not rooted"
         }
-        
+
         val result = executeAsRoot("iptables -L OUTPUT -n -v")
         return if (result.success) result.output else result.error
     }
-    
+
     /**
      * Check if NFQUEUE module is loaded
      */
@@ -254,15 +312,15 @@ object RootHelper {
         if (result.success && result.output.isNotEmpty()) {
             return true
         }
-        
+
         // Try to load the module
         val loadResult = executeAsRoot("modprobe nfnetlink_queue 2>/dev/null || insmod nfnetlink_queue 2>/dev/null")
-        
+
         // Check again
         val checkResult = executeAsRoot("lsmod | grep nfnetlink_queue")
         return checkResult.success && checkResult.output.isNotEmpty()
     }
-    
+
     /**
      * Get kernel version
      */
@@ -274,7 +332,7 @@ object RootHelper {
             "Unknown"
         }
     }
-    
+
     /**
      * Check if iptables is available
      */

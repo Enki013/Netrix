@@ -84,24 +84,36 @@ android {
             doLast {
                 def abis = ['arm64-v8a', 'armeabi-v7a', 'x86_64']
                 abis.each { abi ->
-                    def daemonSrc = file("${buildDir}/intermediates/cmake/${variant.name}/obj/${abi}/nfqueue_daemon")
+                    // AGP 8+ writes CMake outputs under intermediates/cxx/<Variant>/<hash>/obj/<abi>/,
+                    // not the old intermediates/cmake/<variant>/obj/<abi>/ path. The old path made
+                    // packaging keep stale daemon binaries in src/main/assets.
+                    def daemonCandidates = fileTree("${buildDir}/intermediates/cxx/${variantName}") {
+                        include "**/obj/${abi}/nfqueue_daemon"
+                    }.files
+                    def daemonSrc = daemonCandidates ? daemonCandidates.max { it.lastModified() } : null
                     def assetsDir = file("src/main/assets/daemon/${abi}")
                     
-                    if (daemonSrc.exists()) {
+                    if (daemonSrc != null && daemonSrc.exists()) {
                         assetsDir.mkdirs()
                         copy {
                             from daemonSrc
                             into assetsDir
                             rename { 'nfqueue_daemon' }
                         }
-                        println "Copied daemon for ${abi}"
+                        println "Copied daemon for ${abi} from ${daemonSrc}"
+                    } else {
+                        println "WARNING: NFQUEUE daemon not found for ${abi} in ${buildDir}/intermediates/cxx/${variantName}"
                     }
                 }
             }
         }
         
-        // Run after native build
-        tasks.findByName("externalNativeBuild${variantName}")?.finalizedBy("copyDaemonTo${variantName}Assets")
+        // Ensure the freshly built daemon is packaged into the APK, not a stale asset.
+        def externalNativeTask = tasks.findByName("externalNativeBuild${variantName}")
+        if (externalNativeTask != null) {
+            tasks.named("copyDaemonTo${variantName}Assets").configure { dependsOn externalNativeTask }
+        }
+        tasks.findByName("merge${variantName}Assets")?.dependsOn("copyDaemonTo${variantName}Assets")
     }
 }
 

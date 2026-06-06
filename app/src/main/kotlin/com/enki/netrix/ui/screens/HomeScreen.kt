@@ -62,10 +62,17 @@ fun HomeScreen(
         else -> VpnState.DISCONNECTED
     }
     
-    // Clear connecting flag when service connects
-    LaunchedEffect(isServiceRunning) {
+    // Clear connecting flag when service connects or when startup fails to report
+    // running. Without this, root-mode failures (for example denied Magisk
+    // permission) leave the button stuck on "Connecting…" forever.
+    LaunchedEffect(isConnecting, isServiceRunning, useRootMode) {
         if (isServiceRunning) {
             isConnecting = false
+        } else if (isConnecting) {
+            kotlinx.coroutines.delay(if (useRootMode) 3500L else 8000L)
+            if (!isServiceRunning) {
+                isConnecting = false
+            }
         }
     }
     
@@ -142,7 +149,8 @@ fun HomeScreen(
                     when (vpnState) {
                         VpnState.DISCONNECTED, VpnState.ERROR -> {
                             if (useRootMode) {
-                                // Root mode: NFQUEUE kullan
+                                // Root mode: NFQUEUE kullan. Root permission is requested
+                                // asynchronously inside NfqueueService to avoid blocking UI.
                                 isConnecting = true
                                 NfqueueService.start(context)
                             } else {
