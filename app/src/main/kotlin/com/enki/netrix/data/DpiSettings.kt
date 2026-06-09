@@ -189,7 +189,17 @@ data class DpiSettings(
             // Medya
             "aa.com.tr",
             "trt.net.tr", "trthaber.com", "trtizle.com",
-            "basinhaber.gov.tr"
+            "basinhaber.gov.tr",
+            // Android / Google critical services. Global stream-level HTTPS desync can
+            // break Play Services, Auth and Cronet background traffic, so keep these
+            // off the default bypass path unless the user explicitly removes them.
+            "google.com",
+            "gstatic.com",
+            "googleapis.com",
+            "googleusercontent.com",
+            "android.com",
+            "gvt1.com",
+            "play.google.com"
         )
     }
 }
@@ -208,12 +218,23 @@ enum class DesyncMethod {
         else -> this
     }
 
+    fun safeForVpnStream(): DesyncMethod = when (this) {
+        SPLIT, FAKE -> this
+        SPLIT_REVERSE, DISORDER, DISORDER_REVERSE -> SPLIT
+    }
+
     companion object {
-        fun fromPreference(value: String?): DesyncMethod = try {
-            valueOf(value ?: SPLIT.name).withoutReverse()
+        private fun parse(value: String?): DesyncMethod = try {
+            valueOf(value ?: SPLIT.name)
         } catch (_: Exception) {
             SPLIT
         }
+
+        fun fromVpnPreference(value: String?): DesyncMethod = parse(value).safeForVpnStream()
+
+        fun fromRootPreference(value: String?): DesyncMethod = parse(value)
+
+        fun fromPreference(value: String?): DesyncMethod = fromVpnPreference(value)
     }
 }
 enum class VpnState { DISCONNECTED, CONNECTING, CONNECTED, ERROR }

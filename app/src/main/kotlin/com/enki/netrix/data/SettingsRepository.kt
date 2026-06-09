@@ -32,6 +32,13 @@ object SettingsRepository {
     private fun loadSettings(): DpiSettings {
         if (!::prefs.isInitialized) return DpiSettings()
         
+        val useRootMode = prefs.getBoolean("use_root_mode", false)
+        val desyncMethod = if (useRootMode) {
+            DesyncMethod.fromRootPreference(prefs.getString("desync_method", "SPLIT"))
+        } else {
+            DesyncMethod.fromVpnPreference(prefs.getString("desync_method", "SPLIT"))
+        }
+
         return DpiSettings(
             appTheme = try {
                 AppTheme.valueOf(prefs.getString("app_theme", "SYSTEM") ?: "SYSTEM")
@@ -43,8 +50,8 @@ object SettingsRepository {
             bufferSize = prefs.getInt("buffer_size", 32768),
             tcpFastOpen = prefs.getBoolean("tcp_fast_open", false),
             enableTcpNodelay = prefs.getBoolean("tcp_nodelay", true),
-            useRootMode = prefs.getBoolean("use_root_mode", false),
-            desyncMethod = DesyncMethod.fromPreference(prefs.getString("desync_method", "SPLIT")),
+            useRootMode = useRootMode,
+            desyncMethod = desyncMethod,
             desyncHttp = prefs.getBoolean("desync_http", true),
             desyncHttps = prefs.getBoolean("desync_https", true),
             firstPacketSize = prefs.getInt("first_packet_size", 2),

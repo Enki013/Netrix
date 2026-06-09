@@ -82,6 +82,7 @@ class BypassVpnService : VpnService() {
     
     private var packetsIn = 0L
     private var packetsOut = 0L
+    private var lastStatsUpdateMs = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -95,7 +96,7 @@ class BypassVpnService : VpnService() {
                 bufferSize = prefs.getInt("buffer_size", 32768),
                 tcpFastOpen = prefs.getBoolean("tcp_fast_open", false),
                 enableTcpNodelay = prefs.getBoolean("tcp_nodelay", true),
-                desyncMethod = DesyncMethod.fromPreference(prefs.getString("desync_method", "SPLIT")),
+                desyncMethod = DesyncMethod.fromVpnPreference(prefs.getString("desync_method", "SPLIT")),
                 desyncHttp = prefs.getBoolean("desync_http", true),
                 desyncHttps = prefs.getBoolean("desync_https", true),
                 firstPacketSize = prefs.getInt("first_packet_size", 2),
@@ -109,7 +110,8 @@ class BypassVpnService : VpnService() {
                 customDns2 = prefs.getString("dns2", "94.140.15.15") ?: "94.140.15.15",
                 blockQuic = prefs.getBoolean("block_quic", true),
                 enableLogs = prefs.getBoolean("logs", true),
-                whitelist = prefs.getStringSet("whitelist", emptySet()) ?: emptySet()
+                whitelist = prefs.getStringSet("whitelist", DpiSettings.DEFAULT_WHITELIST)
+                    ?: DpiSettings.DEFAULT_WHITELIST
             )
             Log.i(TAG, "Settings loaded manually")
         } catch (e: Exception) {
@@ -237,7 +239,7 @@ class BypassVpnService : VpnService() {
                     buffer.limit(length)
                     processPacket(buffer)
                     packetsIn++
-                    if (packetsIn % 100 == 0L) updateStats()
+                    updateStatsThrottled()
                 } else if (length < 0) {
                     break
                 }
@@ -270,6 +272,14 @@ class BypassVpnService : VpnService() {
         }
     }
     
+    private fun updateStatsThrottled() {
+        val now = System.currentTimeMillis()
+        if (packetsIn <= 10L || now - lastStatsUpdateMs >= 1000L) {
+            lastStatsUpdateMs = now
+            updateStats()
+        }
+    }
+
     private fun updateStats() {
         val tcpStats = tcpHandler?.getStats() ?: (0L to 0L)
         val udpStats = udpHandler?.getStats() ?: (0L to 0L)
@@ -287,6 +297,7 @@ class BypassVpnService : VpnService() {
         
         Log.i(TAG, "Stopping Netrix...")
         running = false
+        updateStats()
         _isRunning.value = false
         tcpHandler?.stop()
         udpHandler?.stop()

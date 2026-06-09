@@ -126,7 +126,8 @@ fun ConnectionStatusCard(
     packetsProcessed: Long,
     bytesIn: Long,
     bytesOut: Long,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    rootMode: Boolean = false
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -188,8 +189,8 @@ fun ConnectionStatusCard(
                     )
                     StatItem(
                         icon = Icons.Outlined.ArrowUpward,
-                        label = stringResource(R.string.stat_upload),
-                        value = formatBytes(bytesOut)
+                        label = if (rootMode) stringResource(R.string.stat_bypassed) else stringResource(R.string.stat_upload),
+                        value = if (rootMode) formatNumber(bytesOut) else formatBytes(bytesOut)
                     )
                 }
             }

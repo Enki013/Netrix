@@ -139,6 +139,9 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.0'
     implementation 'androidx.core:core-splashscreen:1.2.0'
     
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+    testImplementation 'junit:junit:4.13.2'
+
     debugImplementation libs.androidx.ui.tooling
     debugImplementation libs.androidx.ui.test.manifest
 }

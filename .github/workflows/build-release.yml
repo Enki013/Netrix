@@ -47,6 +47,7 @@ jobs:
 
       - name: Resolve release tag
         run: |
+          git fetch --force --tags origin
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             RELEASE_TAG="${GITHUB_REF_NAME}"
           else
@@ -54,6 +55,11 @@ jobs:
           fi
           echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
           echo "RELEASE_TARGET_SHA=$(git rev-list -n 1 "$RELEASE_TAG")" >> "$GITHUB_ENV"
+
+      - name: Checkout release tag contents
+        run: |
+          git checkout --force "$RELEASE_TAG"
+          chmod +x ./gradlew
 
       - name: Decode keystore
         id: decode_keystore
@@ -87,12 +93,17 @@ jobs:
           set -euo pipefail
 
           CURRENT_TAG="$RELEASE_TAG"
-          PREVIOUS_TAG="$(git describe --tags --abbrev=0 "${CURRENT_TAG}^" 2>/dev/null || true)"
+          PREVIOUS_TAG="$(git tag --sort=-v:refname | awk -v current="$CURRENT_TAG" '$0 == current { found = 1; next } found { print; exit }')"
 
           if [ -n "$PREVIOUS_TAG" ]; then
             RANGE="${PREVIOUS_TAG}..${CURRENT_TAG}"
           else
-            RANGE="${CURRENT_TAG}"
+            changelog="release-artifacts/CHANGELOG.md"
+            {
+              echo "Initial release."
+            } > "$changelog"
+            cat "$changelog"
+            exit 0
           fi
 
           tmpdir="$(mktemp -d)"
@@ -112,6 +123,9 @@ jobs:
 
           while IFS= read -r subject; do
             [ -z "$subject" ] && continue
+            if [ -n "$PREVIOUS_TAG" ] && [ "$subject" = "Initial commit" ]; then
+              continue
+            fi
 
             if [[ "$subject" =~ $conventional_regex ]]; then
               type="${BASH_REMATCH[1]}"

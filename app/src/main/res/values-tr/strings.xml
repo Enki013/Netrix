@@ -34,6 +34,7 @@
     <string name="stat_packets">Paketler</string>
     <string name="stat_download">İndirme</string>
     <string name="stat_upload">Yükleme</string>
+    <string name="stat_bypassed">Atlatılan</string>
     
     <!-- Settings Screen - Sections -->
     <string name="settings_title">Ayarlar</string>

@@ -76,17 +76,12 @@ fun HomeScreen(
         }
     }
     
-    var packetsProcessed by remember { mutableLongStateOf(0L) }
-    var bytesIn by remember { mutableLongStateOf(0L) }
-    var bytesOut by remember { mutableLongStateOf(0L) }
-    
-    LaunchedEffect(Unit) {
-        BypassVpnService.stats.collect { stats ->
-            packetsProcessed = stats.packetsIn + stats.packetsOut
-            bytesIn = stats.bytesIn
-            bytesOut = stats.bytesOut
-        }
-    }
+    val vpnStats by BypassVpnService.stats.collectAsState()
+    val rootStats by NfqueueService.stats.collectAsState()
+    val uiStats = selectConnectionStats(useRootMode, vpnStats, rootStats)
+    val packetsProcessed = uiStats.packetsProcessed
+    val bytesIn = uiStats.bytesIn
+    val bytesOut = uiStats.bytesOut
     
     val vpnLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -218,7 +213,8 @@ fun HomeScreen(
                 vpnState = vpnState,
                 packetsProcessed = packetsProcessed,
                 bytesIn = bytesIn,
-                bytesOut = bytesOut
+                bytesOut = bytesOut,
+                rootMode = useRootMode
             )
             
             Spacer(modifier = Modifier.height(24.dp))

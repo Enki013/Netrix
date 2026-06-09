@@ -25,7 +25,7 @@ class DpiBypass(private val settings: DpiSettings) {
             
             if (shouldBypass) {
                 val protocol = if(isHttps) "HTTPS" else "HTTP"
-                when (settings.desyncMethod) {
+                when (settings.desyncMethod.safeForVpnStream()) {
                     DesyncMethod.SPLIT -> {
                         LogManager.bypass("BYPASS: $protocol Split Applied -> $hostname")
                         sendSplit(output, data)
@@ -62,7 +62,7 @@ class DpiBypass(private val settings: DpiSettings) {
     }
 
     private fun isWhitelisted(host: String): Boolean {
-        return settings.whitelist.any { domain -> host.contains(domain, ignoreCase = true) }
+        return DomainMatcher.isWhitelisted(host, settings.whitelist)
     }
     
     private fun sendDirect(output: OutputStream, data: ByteArray): Boolean {

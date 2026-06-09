@@ -34,6 +34,7 @@
     <string name="stat_packets">Packets</string>
     <string name="stat_download">Download</string>
     <string name="stat_upload">Upload</string>
+    <string name="stat_bypassed">Bypassed</string>
     
     <!-- Settings Screen - Sections -->
     <string name="settings_title">Settings</string>

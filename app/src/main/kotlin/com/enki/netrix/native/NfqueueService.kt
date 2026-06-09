@@ -50,6 +50,9 @@ class NfqueueService : Service() {
         
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+
+        private val _stats = MutableStateFlow(RootStats())
+        val stats: StateFlow<RootStats> = _stats.asStateFlow()
         
         private var _settings: DpiSettings = DpiSettings()
         val settings: DpiSettings get() = _settings
@@ -236,6 +239,7 @@ class NfqueueService : Service() {
         }
         
         _isRunning.value = true
+        _stats.value = RootStats(running = true)
         Log.i(TAG, "[DEBUG] Step 7: SUCCESS! NFQUEUE is now running")
         LogManager.i("NFQUEUE started (daemon mode)")
         updateNotification(getString(R.string.root_bypass_active))
@@ -264,6 +268,7 @@ class NfqueueService : Service() {
         DaemonController.stopDaemon()
         
         _isRunning.value = false
+        _stats.value = RootStats()
         LogManager.i("NFQUEUE stopped")
         
         stopForeground(STOP_FOREGROUND_REMOVE)
@@ -298,6 +303,11 @@ class NfqueueService : Service() {
             while (_isRunning.value) {
                 try {
                     val status = DaemonController.getStatus()
+                    _stats.value = RootStats(
+                        running = status.running,
+                        packetsTotal = status.packetsTotal,
+                        packetsBypassed = status.packetsBypassed
+                    )
                     if (!status.running && _isRunning.value) {
                         // Daemon stopped unexpectedly
                         Log.w(TAG, "Daemon stopped unexpectedly")
@@ -363,3 +373,9 @@ class NfqueueService : Service() {
         manager.notify(NOTIFICATION_ID, createNotification(text))
     }
 }
+
+data class RootStats(
+    val running: Boolean = false,
+    val packetsTotal: Long = 0,
+    val packetsBypassed: Long = 0
+)
