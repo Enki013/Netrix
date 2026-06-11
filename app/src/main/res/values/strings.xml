@@ -53,7 +53,7 @@
     <string name="bypass_fake">Fake</string>
     
     <string name="bypass_https_desync">HTTPS Desync</string>
-    <string name="bypass_https_desync_desc">Process secure connections (TLS)</string>
+    <string name="bypass_https_desync_desc">Advanced: process secure connections (TLS). Off by default for compatibility.</string>
     <string name="bypass_http_desync">HTTP Desync</string>
     <string name="bypass_http_desync_desc">Process unencrypted connections</string>
     

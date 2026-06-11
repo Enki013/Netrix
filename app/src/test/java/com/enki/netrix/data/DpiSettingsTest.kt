@@ -29,4 +29,36 @@ class DpiSettingsTest {
         assertTrue("play.google.com" in defaults)
         assertTrue("android.com" in defaults)
     }
+
+    @Test
+    fun defaultWhitelistIncludesModernCdnAndSocialCriticalServices() {
+        val defaults = DpiSettings.DEFAULT_WHITELIST
+
+        assertTrue("youtube.com" in defaults)
+        assertTrue("googlevideo.com" in defaults)
+        assertTrue("ytimg.com" in defaults)
+        assertTrue("ggpht.com" in defaults)
+        assertTrue("cloudflare.com" in defaults)
+        assertTrue("facebook.com" in defaults)
+        assertTrue("fbcdn.net" in defaults)
+        assertTrue("instagram.com" in defaults)
+        assertTrue("cdninstagram.com" in defaults)
+        assertTrue("whatsapp.net" in defaults)
+    }
+
+    @Test
+    fun normalVpnModeDefaultsToCompatibilitySafeHttpsDesyncOff() {
+        assertEquals(false, DpiSettings().desyncHttps)
+    }
+
+    @Test
+    fun defaultVpnDisallowedPackagesKeepCriticalBackgroundAppsOutOfNormalModeTunnel() {
+        val defaults = DpiSettings.DEFAULT_DISALLOWED_VPN_PACKAGES
+
+        assertTrue("com.google.android.gms" in defaults)
+        assertTrue("com.google.android.googlequicksearchbox" in defaults)
+        assertTrue("com.google.android.youtube" in defaults)
+        assertTrue("com.instagram.android" in defaults)
+        assertTrue("com.whatsapp" in defaults)
+    }
 }

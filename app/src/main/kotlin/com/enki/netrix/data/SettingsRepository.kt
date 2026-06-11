@@ -53,7 +53,7 @@ object SettingsRepository {
             useRootMode = useRootMode,
             desyncMethod = desyncMethod,
             desyncHttp = prefs.getBoolean("desync_http", true),
-            desyncHttps = prefs.getBoolean("desync_https", true),
+            desyncHttps = prefs.getBoolean("desync_https", DpiSettings.DEFAULT_DESYNC_HTTPS),
             firstPacketSize = prefs.getInt("first_packet_size", 2),
             splitDelay = prefs.getLong("split_delay", 50L),
             mixHostCase = prefs.getBoolean("mix_host_case", true),

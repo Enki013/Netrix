@@ -98,7 +98,7 @@ class BypassVpnService : VpnService() {
                 enableTcpNodelay = prefs.getBoolean("tcp_nodelay", true),
                 desyncMethod = DesyncMethod.fromVpnPreference(prefs.getString("desync_method", "SPLIT")),
                 desyncHttp = prefs.getBoolean("desync_http", true),
-                desyncHttps = prefs.getBoolean("desync_https", true),
+                desyncHttps = prefs.getBoolean("desync_https", DpiSettings.DEFAULT_DESYNC_HTTPS),
                 firstPacketSize = prefs.getInt("first_packet_size", 2),
                 splitDelay = prefs.getLong("split_delay", 50L),
                 mixHostCase = prefs.getBoolean("mix_host_case", true),
@@ -194,11 +194,16 @@ class BypassVpnService : VpnService() {
                 builder.setMetered(false)
             }
             
-            // Exclude our own app from VPN
-            try {
-                builder.addDisallowedApplication(packageName)
-            } catch (_: Exception) {
-                Log.w(TAG, "Could not exclude self from VPN")
+            // Exclude our own app and compatibility-sensitive background apps
+            // from the normal VpnService tunnel. This avoids collateral TLS
+            // breakage in Play Services/Cronet/social/media apps while keeping
+            // browser traffic on the VPN path.
+            (DpiSettings.DEFAULT_DISALLOWED_VPN_PACKAGES + packageName).forEach { packageToExclude ->
+                try {
+                    builder.addDisallowedApplication(packageToExclude)
+                } catch (_: Exception) {
+                    Log.w(TAG, "Could not exclude $packageToExclude from VPN")
+                }
             }
             
             vpnInterface = builder.establish()

@@ -53,7 +53,7 @@
     <string name="bypass_fake">Fake</string>
     
     <string name="bypass_https_desync">HTTPS Desync</string>
-    <string name="bypass_https_desync_desc">Güvenli bağlantıları (TLS) işle</string>
+    <string name="bypass_https_desync_desc">Gelişmiş: güvenli bağlantıları (TLS) işle. Uyumluluk için varsayılan olarak kapalıdır.</string>
     <string name="bypass_http_desync">HTTP Desync</string>
     <string name="bypass_http_desync_desc">Şifresiz bağlantıları işle</string>
     

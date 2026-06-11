@@ -1,5 +1,7 @@
 package com.enki.netrix.native
 
+import com.enki.netrix.data.DpiSettings
+
 import android.content.Context
 import android.net.LocalSocket
 import android.net.LocalSocketAddress
@@ -490,7 +492,7 @@ data class NfqueueSettings(
     val firstPacketSize: Int = 2,
     val splitDelay: Int = 50,
     val splitCount: Int = 4,
-    val desyncHttps: Boolean = true,
+    val desyncHttps: Boolean = DpiSettings.DEFAULT_DESYNC_HTTPS,
     val desyncHttp: Boolean = true,
     val mixHostCase: Boolean = true,
     val blockQuic: Boolean = true

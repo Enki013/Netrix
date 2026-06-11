@@ -15,7 +15,7 @@ data class DpiSettings(
     
     val desyncMethod: DesyncMethod = DesyncMethod.SPLIT,
     val desyncHttp: Boolean = true,
-    val desyncHttps: Boolean = true,
+    val desyncHttps: Boolean = DEFAULT_DESYNC_HTTPS,
     val firstPacketSize: Int = 2,
     val splitDelay: Long = 50L,
     val mixHostCase: Boolean = true,
@@ -199,7 +199,49 @@ data class DpiSettings(
             "googleusercontent.com",
             "android.com",
             "gvt1.com",
-            "play.google.com"
+            "play.google.com",
+            // Modern CDN / media / social traffic is especially sensitive to
+            // stream-level TLS ClientHello fragmentation in VpnService mode.
+            // Keep these default-skipped so Netrix does not break everyday apps
+            // with ERR_SSL_BAD_RECORD_MAC_ALERT / decode_error collateral damage.
+            "youtube.com",
+            "googlevideo.com",
+            "ytimg.com",
+            "ggpht.com",
+            "cloudflare.com",
+            "facebook.com",
+            "fbcdn.net",
+            "instagram.com",
+            "cdninstagram.com",
+            "whatsapp.net"
+        )
+
+        /**
+         * Compatibility-safe default for the normal VpnService path.
+         * Users can still enable HTTPS desync explicitly from settings when they
+         * need aggressive bypass for a specific network, but it should not be on
+         * by default because it can corrupt modern CDN/Cronet TLS streams.
+         */
+        const val DEFAULT_DESYNC_HTTPS = false
+
+        /**
+         * Normal VpnService mode is implemented as a userspace TCP/UDP proxy.
+         * Keep high-volume background apps with very strict Cronet/QUIC/TLS
+         * behavior outside the tunnel by default so Netrix cannot destabilize
+         * sign-in, push, social feeds or media playback while the browser still
+         * gets the VPN path.
+         */
+        val DEFAULT_DISALLOWED_VPN_PACKAGES = setOf(
+            "com.google.android.gms",
+            "com.google.android.googlequicksearchbox",
+            "com.android.vending",
+            "com.google.android.youtube",
+            "com.google.android.apps.youtube.music",
+            "com.google.android.videos",
+            "com.instagram.android",
+            "com.facebook.katana",
+            "com.facebook.orca",
+            "com.whatsapp"
         )
     }
 }
