@@ -277,14 +277,28 @@ object RootHelper {
 
         Log.i(TAG, "Clearing iptables NFQUEUE rules")
 
-        // Delete all NFQUEUE rules from OUTPUT chain
-        // Run multiple times to clear all matching rules
+        // Delete all NFQUEUE/bypass rules from OUTPUT chain. Keep legacy mark
+        // cleanup because old app versions used SO_MARK before switching to
+        // the root-owner bypass rule.
+        // Run multiple times to clear duplicate matching rules.
         repeat(10) {
+            executeAsRoot(
+                "iptables -D OUTPUT -m owner --uid-owner 0 -j ACCEPT 2>/dev/null"
+            )
+            executeAsRoot(
+                "iptables -D OUTPUT -m mark --mark 0x10DEAD -j ACCEPT 2>/dev/null"
+            )
             executeAsRoot(
                 "iptables -D OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num $QUEUE_NUM 2>/dev/null"
             )
             executeAsRoot(
+                "iptables -D OUTPUT -p tcp --dport 443 -j NFQUEUE --queue-num $QUEUE_NUM --queue-bypass 2>/dev/null"
+            )
+            executeAsRoot(
                 "iptables -D OUTPUT -p tcp --dport 80 -j NFQUEUE --queue-num $QUEUE_NUM 2>/dev/null"
+            )
+            executeAsRoot(
+                "iptables -D OUTPUT -p tcp --dport 80 -j NFQUEUE --queue-num $QUEUE_NUM --queue-bypass 2>/dev/null"
             )
         }
 

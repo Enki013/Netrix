@@ -15,6 +15,7 @@ import com.enki.netrix.MainActivity
 import com.enki.netrix.R
 import com.enki.netrix.data.DesyncMethod
 import com.enki.netrix.data.DpiSettings
+import com.enki.netrix.native.NfqueueService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.FileInputStream
@@ -60,6 +61,13 @@ class BypassVpnService : VpnService() {
                 }
                 context.startService(intent)
             }
+        }
+
+        fun stop(context: android.content.Context) {
+            val intent = android.content.Intent(context, BypassVpnService::class.java).apply {
+                action = ACTION_STOP
+            }
+            context.startService(intent)
         }
     }
     
@@ -159,6 +167,10 @@ class BypassVpnService : VpnService() {
         if (running) return
         
         Log.i(TAG, "Starting Netrix...")
+        // Root NFQUEUE mode and the normal VpnService tunnel must never run
+        // together: otherwise traffic can be TCP-proxied through tun0 and then
+        // intercepted/injected again by the root daemon, corrupting TLS streams.
+        NfqueueService.stop(this)
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         
@@ -298,7 +310,11 @@ class BypassVpnService : VpnService() {
     
     private fun stopVpn() {
         // Don't run again if already stopped (prevent duplicate logs)
-        if (!running && vpnInterface == null) return
+        if (!running && vpnInterface == null) {
+            _isRunning.value = false
+            stopSelf()
+            return
+        }
         
         Log.i(TAG, "Stopping Netrix...")
         running = false

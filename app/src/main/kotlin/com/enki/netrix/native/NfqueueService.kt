@@ -15,6 +15,7 @@ import com.enki.netrix.MainActivity
 import com.enki.netrix.R
 import com.enki.netrix.data.DpiSettings
 import com.enki.netrix.data.SettingsRepository
+import com.enki.netrix.vpn.BypassVpnService
 import com.enki.netrix.vpn.LogManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +69,8 @@ class NfqueueService : Service() {
          * Start the service
          */
         fun start(context: Context) {
+            BypassVpnService.stop(context)
+
             val intent = Intent(context, NfqueueService::class.java).apply {
                 action = ACTION_START
             }
@@ -154,6 +157,12 @@ class NfqueueService : Service() {
             Log.w(TAG, "[DEBUG] NFQUEUE already running, skipping")
             return
         }
+
+        // Root NFQUEUE and Android VpnService modes are mutually exclusive.
+        // Stop the tun0/VpnService path before installing OUTPUT NFQUEUE rules
+        // so TLS ClientHello traffic is not modified by both code paths.
+        BypassVpnService.stop(this@NfqueueService)
+        delay(500)
         
         Log.i(TAG, "[DEBUG] ========== STARTING NFQUEUE SERVICE ==========")
         Log.i(TAG, "[DEBUG] Step 1: Starting foreground service...")
@@ -251,10 +260,6 @@ class NfqueueService : Service() {
     }
     
     private suspend fun stopNfqueue() {
-        if (!_isRunning.value) {
-            return
-        }
-        
         Log.i(TAG, "Stopping NFQUEUE service...")
         
         // Stop status monitoring
