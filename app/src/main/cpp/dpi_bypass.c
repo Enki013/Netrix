@@ -33,6 +33,18 @@
 
 // Packet mark to identify our own packets (avoid re-capture)
 #define OUR_PACKET_MARK 0x10DEAD
+#define MAX_DESYNC_FLOWS 512
+#define DESYNC_FLOW_TTL_SEC 120
+
+typedef struct {
+    uint32_t src_ip;
+    uint32_t dst_ip;
+    uint16_t src_port;
+    uint16_t dst_port;
+    uint32_t first_seq;
+    time_t last_seen;
+    bool used;
+} DesyncFlowEntry;
 
 // Global state
 static struct {
@@ -45,6 +57,8 @@ static struct {
     int raw_socket;
     uint32_t packet_mark;
     bool raw_socket_initialized;
+    DesyncFlowEntry desync_flows[MAX_DESYNC_FLOWS];
+    uint32_t desync_flow_cursor;
 } g_bypass = {
     .settings = {
         .method = BYPASS_SPLIT,
@@ -61,7 +75,9 @@ static struct {
     .whitelist_count = 0,
     .raw_socket = -1,
     .packet_mark = OUR_PACKET_MARK,
-    .raw_socket_initialized = false
+    .raw_socket_initialized = false,
+    .desync_flows = {0},
+    .desync_flow_cursor = 0
 };
 
 // Forward declarations
@@ -82,6 +98,8 @@ static uint8_t* create_tcp_fragment(uint8_t* orig_packet, uint32_t orig_len,
                                     uint8_t* tcp_data, uint32_t tcp_data_len,
                                     uint32_t seq_offset, uint32_t* out_len);
 static void delay_ms(uint32_t ms);
+static bool desync_flow_should_inject(struct iphdr* ip, struct tcphdr* tcp, uint64_t pkt_id);
+static void desync_flow_forget(struct iphdr* ip, struct tcphdr* tcp);
 
 /**
  * Initialize DPI bypass
@@ -94,6 +112,8 @@ void dpi_bypass_init(DpiBypassSettings* settings) {
     }
     
     memset(&g_bypass.stats, 0, sizeof(DpiBypassStats));
+    memset(g_bypass.desync_flows, 0, sizeof(g_bypass.desync_flows));
+    g_bypass.desync_flow_cursor = 0;
     
     LOGI("DPI bypass initialized: method=%d, split_size=%d, delay=%d",
          g_bypass.settings.method,
@@ -138,6 +158,97 @@ static const char* tcp_flags_str(struct tcphdr* tcp) {
 
 // Packet counter for logging
 static uint64_t g_pkt_id = 0;
+
+
+static bool desync_same_flow(const DesyncFlowEntry* entry, struct iphdr* ip, struct tcphdr* tcp) {
+    return entry->used &&
+           entry->src_ip == ip->saddr &&
+           entry->dst_ip == ip->daddr &&
+           entry->src_port == tcp->source &&
+           entry->dst_port == tcp->dest;
+}
+
+/**
+ * Per-connection guard for root NFQUEUE raw injection.
+ *
+ * The original packet is dropped after successful raw fragment injection. If the
+ * same ClientHello/payload is later retransmitted, desyncing it again can create
+ * duplicate out-of-order fragments and destabilize TLS. Track recent TCP flows
+ * and only inject once per connection; later matching payloads are accepted so
+ * TCP can recover normally.
+ */
+static bool desync_flow_should_inject(struct iphdr* ip, struct tcphdr* tcp, uint64_t pkt_id) {
+    time_t now = time(NULL);
+    uint32_t seq = ntohl(tcp->seq);
+    int free_slot = -1;
+    int oldest_slot = 0;
+    time_t oldest_seen = now;
+
+    pthread_mutex_lock(&g_bypass.lock);
+
+    for (int i = 0; i < MAX_DESYNC_FLOWS; i++) {
+        DesyncFlowEntry* entry = &g_bypass.desync_flows[i];
+        if (!entry->used) {
+            if (free_slot < 0) free_slot = i;
+            continue;
+        }
+
+        if ((now - entry->last_seen) > DESYNC_FLOW_TTL_SEC) {
+            entry->used = false;
+            if (free_slot < 0) free_slot = i;
+            continue;
+        }
+
+        if (entry->last_seen < oldest_seen) {
+            oldest_seen = entry->last_seen;
+            oldest_slot = i;
+        }
+
+        if (desync_same_flow(entry, ip, tcp)) {
+            entry->last_seen = now;
+            LOGI("[PKT#%llu] DESYNC-GUARD: already injected flow %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u first_seq=%u current_seq=%u; accepting original",
+                 (unsigned long long)pkt_id,
+                 ip->saddr & 0xFF, (ip->saddr >> 8) & 0xFF, (ip->saddr >> 16) & 0xFF, (ip->saddr >> 24) & 0xFF,
+                 ntohs(tcp->source),
+                 ip->daddr & 0xFF, (ip->daddr >> 8) & 0xFF, (ip->daddr >> 16) & 0xFF, (ip->daddr >> 24) & 0xFF,
+                 ntohs(tcp->dest), entry->first_seq, seq);
+            pthread_mutex_unlock(&g_bypass.lock);
+            return false;
+        }
+    }
+
+    int slot = free_slot >= 0 ? free_slot : (int)(g_bypass.desync_flow_cursor++ % MAX_DESYNC_FLOWS);
+    if (free_slot < 0 && g_bypass.desync_flows[slot].used && g_bypass.desync_flows[slot].last_seen > oldest_seen) {
+        slot = oldest_slot;
+    }
+
+    DesyncFlowEntry* entry = &g_bypass.desync_flows[slot];
+    entry->src_ip = ip->saddr;
+    entry->dst_ip = ip->daddr;
+    entry->src_port = tcp->source;
+    entry->dst_port = tcp->dest;
+    entry->first_seq = seq;
+    entry->last_seen = now;
+    entry->used = true;
+
+    LOGI("[PKT#%llu] DESYNC-GUARD: first payload for flow, injecting once (seq=%u, slot=%d)",
+         (unsigned long long)pkt_id, seq, slot);
+
+    pthread_mutex_unlock(&g_bypass.lock);
+    return true;
+}
+
+static void desync_flow_forget(struct iphdr* ip, struct tcphdr* tcp) {
+    pthread_mutex_lock(&g_bypass.lock);
+    for (int i = 0; i < MAX_DESYNC_FLOWS; i++) {
+        DesyncFlowEntry* entry = &g_bypass.desync_flows[i];
+        if (desync_same_flow(entry, ip, tcp)) {
+            entry->used = false;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&g_bypass.lock);
+}
 
 /**
  * Main packet processing callback
@@ -222,6 +333,10 @@ NfqueueVerdict dpi_bypass_process_packet(NfqueuePacket* packet, void* user_data)
          ntohl(tcp->ack_seq),
          tcp_data_len);
     
+    if (tcp->fin || tcp->rst) {
+        desync_flow_forget(ip, tcp);
+    }
+
     if (tcp_data_len == 0) {
         LOGD("[PKT#%llu] ACCEPT: No TCP payload (control packet)", (unsigned long long)pkt_id);
         return NFQUEUE_ACCEPT;  // No data to process
@@ -235,6 +350,10 @@ NfqueueVerdict dpi_bypass_process_packet(NfqueuePacket* packet, void* user_data)
         return NFQUEUE_ACCEPT;
     }
     
+    if (!desync_flow_should_inject(ip, tcp, pkt_id)) {
+        return NFQUEUE_ACCEPT;
+    }
+
     LOGI("[PKT#%llu] >>> BYPASS: %s -> %s (method=%d, data=%u bytes)", 
          (unsigned long long)pkt_id,
          hostname[0] ? hostname : "unknown",
@@ -246,6 +365,7 @@ NfqueueVerdict dpi_bypass_process_packet(NfqueuePacket* packet, void* user_data)
     if (!g_bypass.raw_socket_initialized) {
         if (dpi_raw_socket_init() < 0) {
             LOGE("Failed to initialize raw socket, falling back to ACCEPT");
+            desync_flow_forget(ip, tcp);
             return NFQUEUE_ACCEPT;
         }
     }
@@ -287,7 +407,9 @@ NfqueueVerdict dpi_bypass_process_packet(NfqueuePacket* packet, void* user_data)
         return NFQUEUE_DROP;
     }
     
-    // Injection failed, accept original packet
+    // Injection failed, accept original packet and clear the guard entry so a
+    // later retransmit can try again instead of being permanently bypassed.
+    desync_flow_forget(ip, tcp);
     LOGD("Injection failed, accepting original packet");
     return NFQUEUE_ACCEPT;
 }
