@@ -29,7 +29,10 @@ class BypassVpnService : VpnService() {
         private const val TAG = "Netrix"
         private const val NOTIFICATION_ID = 1
         private const val CHANNEL_ID = "netrix_channel"
-        private const val MTU = 1500
+        // Keep the userspace VPN tunnel conservative. 1280 is the IPv6 minimum
+        // MTU and avoids path-MTU black holes/oversized TLS records on mobile
+        // networks while the TCP proxy is fragmenting/desyncing traffic.
+        private const val MTU = 1280
         
         // Intent Actions
         const val ACTION_STOP = "STOP"
