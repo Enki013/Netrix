@@ -611,8 +611,38 @@ static int apply_split_with_injection(uint8_t* payload, uint32_t len, uint32_t d
         return -1;
     }
     
-    // Calculate split position
+    // Calculate split position. For HTTPS ClientHello, prefer splitting inside
+    // the SNI hostname instead of blindly using first_packet_size. A configured
+    // value like 2 cuts the TLS record header (16 03 | ...), which is fragile
+    // and can surface as SSL_VERSION_MISMATCH / BAD_RECORD_MAC. Splitting
+    // inside the hostname keeps TLS record/handshake framing intact while still
+    // hiding the full SNI from simple DPI parsers.
     uint16_t split_pos = g_bypass.settings.first_packet_size;
+    if (tcp_data_len >= 6 && dpi_is_tls_client_hello(tcp_data, tcp_data_len)) {
+        char sni_hostname[MAX_HOSTNAME_LEN] = {0};
+        int sni_hostname_len = dpi_extract_sni(tcp_data, tcp_data_len, sni_hostname, sizeof(sni_hostname));
+
+        // Use the already-proven SNI extraction path, then locate the exact
+        // hostname bytes in the ClientHello. This avoids duplicating TLS
+        // extension parsing and keeps the split away from TLS record,
+        // handshake, and extension length fields.
+        if (sni_hostname_len > 1) {
+            uint8_t* hostname_ptr = memmem(tcp_data, tcp_data_len, sni_hostname, (size_t)sni_hostname_len);
+            if (hostname_ptr != NULL) {
+                uint32_t hostname_offset = (uint32_t)(hostname_ptr - tcp_data);
+                uint32_t preferred = hostname_offset + ((uint32_t)sni_hostname_len / 2);
+                if (preferred > 0 && preferred < tcp_data_len) {
+                    split_pos = (uint16_t)preferred;
+                    LOGI("[SPLIT] HTTPS SNI-safe split: hostname=%s, hostname_offset=%u, hostname_len=%d, split_pos=%u",
+                         sni_hostname, hostname_offset, sni_hostname_len, split_pos);
+                }
+            } else {
+                LOGD("[SPLIT] HTTPS SNI hostname bytes not found; using configured split size=%u", split_pos);
+            }
+        } else {
+            LOGD("[SPLIT] HTTPS SNI unavailable; using configured split size=%u", split_pos);
+        }
+    }
     if (split_pos >= tcp_data_len) {
         split_pos = tcp_data_len > 1 ? (tcp_data_len / 2) : 1;
     }
