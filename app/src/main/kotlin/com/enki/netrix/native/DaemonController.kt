@@ -495,10 +495,11 @@ data class NfqueueSettings(
     val desyncHttps: Boolean = DpiSettings.DEFAULT_DESYNC_HTTPS,
     val desyncHttp: Boolean = true,
     val mixHostCase: Boolean = true,
-    val blockQuic: Boolean = true
+    val blockQuic: Boolean = true,
+    val fakeTtl: Int = 8
 ) {
     fun toJson(): String {
-        return """{"method":"$method","first_packet_size":$firstPacketSize,"split_delay":$splitDelay,"split_count":$splitCount,"desync_https":$desyncHttps,"desync_http":$desyncHttp,"mix_host_case":$mixHostCase,"block_quic":$blockQuic}"""
+        return """{"method":"$method","first_packet_size":$firstPacketSize,"split_delay":$splitDelay,"split_count":$splitCount,"desync_https":$desyncHttps,"desync_http":$desyncHttp,"mix_host_case":$mixHostCase,"block_quic":$blockQuic,"fake_ttl":$fakeTtl}"""
     }
 }
 

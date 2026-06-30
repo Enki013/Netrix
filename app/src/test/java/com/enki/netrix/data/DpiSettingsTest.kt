@@ -11,6 +11,7 @@ class DpiSettingsTest {
         assertEquals(DesyncMethod.SPLIT, DesyncMethod.fromVpnPreference("DISORDER"))
         assertEquals(DesyncMethod.SPLIT, DesyncMethod.fromVpnPreference("DISORDER_REVERSE"))
         assertEquals(DesyncMethod.FAKE, DesyncMethod.fromVpnPreference("FAKE"))
+        assertEquals(DesyncMethod.FAKE, DesyncMethod.fromVpnPreference("GECIT_FAKE"))
     }
 
     @Test
@@ -18,6 +19,7 @@ class DpiSettingsTest {
         assertEquals(DesyncMethod.SPLIT_REVERSE, DesyncMethod.fromRootPreference("SPLIT_REVERSE"))
         assertEquals(DesyncMethod.DISORDER, DesyncMethod.fromRootPreference("DISORDER"))
         assertEquals(DesyncMethod.DISORDER_REVERSE, DesyncMethod.fromRootPreference("DISORDER_REVERSE"))
+        assertEquals(DesyncMethod.GECIT_FAKE, DesyncMethod.fromRootPreference("GECIT_FAKE"))
     }
 
     @Test

@@ -65,8 +65,9 @@ fun SettingsScreen(
         LogManager.enabled = newSettings.enableLogs
         scope.launch { 
             SettingsRepository.updateSettings(newSettings)
-            // Apply new settings if VPN is running
+            // Apply new settings if VPN/root daemon is running
             BypassVpnService.reloadSettings(context)
+            NfqueueService.reloadSettings(context)
         }
     }
 
@@ -113,6 +114,19 @@ fun SettingsScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                        if (settings.useRootMode) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = settings.desyncMethod == DesyncMethod.GECIT_FAKE,
+                                    onClick = { updateSettings(settings.copy(desyncMethod = DesyncMethod.GECIT_FAKE)) },
+                                    label = { Text(stringResource(R.string.bypass_gecit_fake)) },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
                     }
                     SettingsSwitchRow(Icons.Default.Https, stringResource(R.string.bypass_https_desync), stringResource(R.string.bypass_https_desync_desc), settings.desyncHttps) { updateSettings(settings.copy(desyncHttps = it)) }
                     SettingsSwitchRow(Icons.Default.Http, stringResource(R.string.bypass_http_desync), stringResource(R.string.bypass_http_desync_desc), settings.desyncHttp) { updateSettings(settings.copy(desyncHttp = it)) }
@@ -141,6 +155,15 @@ fun SettingsScreen(
                                 singleLine = true
                             )
                         }
+                    }
+                    if (settings.desyncMethod == DesyncMethod.GECIT_FAKE) {
+                        SettingsSliderRow(
+                            stringResource(R.string.advanced_fake_ttl),
+                            settings.fakeTtl.toFloat(),
+                            1f..32f,
+                            { updateSettings(settings.copy(fakeTtl = it.toInt())) },
+                            "${settings.fakeTtl}"
+                        )
                     }
                     // Delay: 0-100ms (default 50ms)
                     SettingsSliderRow(stringResource(R.string.advanced_delay), settings.splitDelay.toFloat(), 0f..100f, { updateSettings(settings.copy(splitDelay = it.toLong())) }, "${settings.splitDelay}")

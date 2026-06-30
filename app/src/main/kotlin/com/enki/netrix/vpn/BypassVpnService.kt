@@ -116,6 +116,7 @@ class BypassVpnService : VpnService() {
                 splitCount = prefs.getInt("split_count", 4),
                 fakeHex = prefs.getString("fake_hex", "474554202f20485454502f312e300d0a0d0a") ?: "474554202f20485454502f312e300d0a0d0a",
                 fakeCount = prefs.getInt("fake_count", 1),
+                fakeTtl = prefs.getInt("fake_ttl", 8),
                 customDnsEnabled = prefs.getBoolean("dns_enabled", false),
                 customDns = prefs.getString("dns1", "94.140.14.14") ?: "94.140.14.14",
                 customDns2 = prefs.getString("dns2", "94.140.15.15") ?: "94.140.15.15",

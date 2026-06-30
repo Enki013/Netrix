@@ -226,7 +226,8 @@ class NfqueueService : Service() {
             desyncHttps = _settings.desyncHttps,
             desyncHttp = _settings.desyncHttp,
             mixHostCase = _settings.mixHostCase,
-            blockQuic = _settings.blockQuic
+            blockQuic = _settings.blockQuic,
+            fakeTtl = _settings.fakeTtl
         )
         Log.i(TAG, "[DEBUG] Daemon settings: $daemonSettings")
         
@@ -296,7 +297,8 @@ class NfqueueService : Service() {
             desyncHttps = _settings.desyncHttps,
             desyncHttp = _settings.desyncHttp,
             mixHostCase = _settings.mixHostCase,
-            blockQuic = _settings.blockQuic
+            blockQuic = _settings.blockQuic,
+            fakeTtl = _settings.fakeTtl
         )
         
         DaemonController.updateSettings(daemonSettings)

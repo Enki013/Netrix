@@ -60,6 +60,7 @@ object SettingsRepository {
             splitCount = prefs.getInt("split_count", 4),
             fakeHex = prefs.getString("fake_hex", "474554202f20485454502f312e300d0a0d0a") ?: "474554202f20485454502f312e300d0a0d0a",
             fakeCount = prefs.getInt("fake_count", 1),
+            fakeTtl = prefs.getInt("fake_ttl", 8),
             customDnsEnabled = prefs.getBoolean("dns_enabled", false),
             customDns = prefs.getString("dns1", "94.140.14.14") ?: "94.140.14.14",
             customDns2 = prefs.getString("dns2", "94.140.15.15") ?: "94.140.15.15",
@@ -90,6 +91,7 @@ object SettingsRepository {
             putInt("split_count", settings.splitCount)
             putString("fake_hex", settings.fakeHex)
             putInt("fake_count", settings.fakeCount)
+            putInt("fake_ttl", settings.fakeTtl)
             putBoolean("dns_enabled", settings.customDnsEnabled)
             putString("dns1", settings.customDns)
             putString("dns2", settings.customDns2)

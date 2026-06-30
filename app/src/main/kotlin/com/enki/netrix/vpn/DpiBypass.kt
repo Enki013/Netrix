@@ -42,7 +42,8 @@ class DpiBypass(private val settings: DpiSettings) {
                         LogManager.bypass("BYPASS: $protocol Disorder Reverse Applied -> $hostname")
                         sendShreddedReverse(output, data)
                     }
-                    DesyncMethod.FAKE -> {
+                    DesyncMethod.FAKE,
+                    DesyncMethod.GECIT_FAKE -> {
                         LogManager.bypass("BYPASS: $protocol Fake Packet Sent -> $hostname")
                         sendFake(output, data)
                     }

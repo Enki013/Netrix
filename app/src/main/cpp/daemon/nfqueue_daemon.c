@@ -97,7 +97,8 @@ int main(int argc, char* argv[]) {
         .desync_https = true,
         .desync_http = true,
         .mix_host_case = true,
-        .block_quic = true
+        .block_quic = true,
+        .fake_ttl = 8
     };
     dpi_bypass_init(&settings);
 
@@ -287,6 +288,7 @@ static void parse_settings_from_command(const char* cmd, DpiBypassSettings* sett
     if (strstr(cmd, "\"method\":\"SPLIT_REVERSE\"")) settings->method = BYPASS_SPLIT_REVERSE;
     else if (strstr(cmd, "\"method\":\"DISORDER_REVERSE\"")) settings->method = BYPASS_DISORDER_REVERSE;
     else if (strstr(cmd, "\"method\":\"DISORDER\"")) settings->method = BYPASS_DISORDER;
+    else if (strstr(cmd, "\"method\":\"GECIT_FAKE\"")) settings->method = BYPASS_GECIT_FAKE;
     else if (strstr(cmd, "\"method\":\"SPLIT\"")) settings->method = BYPASS_SPLIT;
 
     char* ptr;
@@ -310,6 +312,10 @@ static void parse_settings_from_command(const char* cmd, DpiBypassSettings* sett
     if (strstr(cmd, "\"mix_host_case\":false")) settings->mix_host_case = false;
     if (strstr(cmd, "\"block_quic\":true")) settings->block_quic = true;
     if (strstr(cmd, "\"block_quic\":false")) settings->block_quic = false;
+    if ((ptr = strstr(cmd, "\"fake_ttl\":")) != NULL) {
+        int value = atoi(ptr + 11);
+        if (value > 0 && value <= 64) settings->fake_ttl = (uint8_t)value;
+    }
 }
 
 /**

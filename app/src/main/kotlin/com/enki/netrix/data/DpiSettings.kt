@@ -22,6 +22,8 @@ data class DpiSettings(
     val splitCount: Int = 4,
     val fakeHex: String = "474554202f20485454502f312e300d0a0d0a", 
     val fakeCount: Int = 1,
+    /** Root gecit-style fake ClientHello TTL. Low enough to reach DPI, not origin. */
+    val fakeTtl: Int = 8,
     val customDnsEnabled: Boolean = false, 
     val customDns: String = "94.140.14.14",
     val customDns2: String = "94.140.15.15",
@@ -252,17 +254,23 @@ enum class DesyncMethod {
     SPLIT_REVERSE,
     DISORDER,
     DISORDER_REVERSE,
-    FAKE;
+    FAKE,
+    /** Root-only: inject low-TTL fake TLS ClientHello before accepting real ClientHello. */
+    GECIT_FAKE;
 
     fun withoutReverse(): DesyncMethod = when (this) {
         SPLIT_REVERSE -> SPLIT
         DISORDER_REVERSE -> DISORDER
+        GECIT_FAKE -> GECIT_FAKE
         else -> this
     }
 
     fun safeForVpnStream(): DesyncMethod = when (this) {
         SPLIT, FAKE -> this
         SPLIT_REVERSE, DISORDER, DISORDER_REVERSE -> SPLIT
+        // Root-only raw packet injection cannot be represented safely on the
+        // VpnService socket-stream path, so fall back to the existing fake mode.
+        GECIT_FAKE -> FAKE
     }
 
     companion object {

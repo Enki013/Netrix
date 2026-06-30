@@ -51,6 +51,7 @@
     <string name="bypass_split">Split</string>
     <string name="bypass_disorder">Disorder</string>
     <string name="bypass_fake">Fake</string>
+    <string name="bypass_gecit_fake">Gecit Fake</string>
     
     <string name="bypass_https_desync">HTTPS Desync</string>
     <string name="bypass_https_desync_desc">Advanced: process secure connections (TLS). Off by default for compatibility.</string>
@@ -62,6 +63,7 @@
     <string name="advanced_split_position_value">%d. byte</string>
     <string name="advanced_fragment_count">Fragment Count</string>
     <string name="advanced_fake_hex">Fake Hex Data</string>
+    <string name="advanced_fake_ttl">Fake TTL</string>
     <string name="advanced_delay">Delay (ms)</string>
     <string name="advanced_host_mixing">Host Mixing</string>
     <string name="advanced_host_mixing_desc">Host → hoSt</string>

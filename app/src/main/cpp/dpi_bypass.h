@@ -22,7 +22,8 @@ typedef enum {
     BYPASS_SPLIT = 1,
     BYPASS_SPLIT_REVERSE = 2,
     BYPASS_DISORDER = 3,
-    BYPASS_DISORDER_REVERSE = 4
+    BYPASS_DISORDER_REVERSE = 4,
+    BYPASS_GECIT_FAKE = 5
 } BypassMethod;
 
 // DPI bypass settings
@@ -35,6 +36,7 @@ typedef struct {
     bool desync_http;              // Apply to HTTP (port 80)
     bool mix_host_case;            // Mix case of Host header
     bool block_quic;               // Block QUIC (UDP 443)
+    uint8_t fake_ttl;              // Low TTL for gecit-style fake ClientHello
 } DpiBypassSettings;
 
 // Statistics

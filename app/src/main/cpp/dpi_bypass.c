@@ -35,6 +35,7 @@
 #define OUR_PACKET_MARK 0x10DEAD
 #define MAX_DESYNC_FLOWS 512
 #define DESYNC_FLOW_TTL_SEC 120
+#define GECIT_FAKE_SNI "www.google.com"
 
 typedef struct {
     uint32_t src_ip;
@@ -68,7 +69,8 @@ static struct {
         .desync_https = true,
         .desync_http = true,
         .mix_host_case = true,
-        .block_quic = true
+        .block_quic = true,
+        .fake_ttl = 8
     },
     .stats = {0},
     .lock = PTHREAD_MUTEX_INITIALIZER,
@@ -94,12 +96,17 @@ static uint16_t calculate_ip_checksum(struct iphdr* ip);
 // New injection-based functions
 static int apply_split_with_injection(uint8_t* payload, uint32_t len, uint32_t dst_ip, bool reverse);
 static int apply_disorder_with_injection(uint8_t* payload, uint32_t len, uint32_t dst_ip, bool reverse);
+static int apply_gecit_fake_client_hello(uint8_t* payload, uint32_t len, uint32_t dst_ip);
 static uint8_t* create_tcp_fragment(uint8_t* orig_packet, uint32_t orig_len,
                                     uint8_t* tcp_data, uint32_t tcp_data_len,
                                     uint32_t seq_offset, uint32_t* out_len);
 static void delay_ms(uint32_t ms);
 static bool desync_flow_should_inject(struct iphdr* ip, struct tcphdr* tcp, uint64_t pkt_id);
 static void desync_flow_forget(struct iphdr* ip, struct tcphdr* tcp);
+
+static const uint8_t GECIT_FAKE_CLIENT_HELLO[] = {
+    0x16, 0x03, 0x01, 0x00, 0x46, 0x01, 0x00, 0x00, 0x42, 0x03, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x13, 0x01, 0x01, 0x00, 0x00, 0x17, 0x00, 0x00, 0x00, 0x13, 0x00, 0x11, 0x00, 0x00, 0x0E, 0x77, 0x77, 0x77, 0x2E, 0x67, 0x6F, 0x6F, 0x67, 0x6C, 0x65, 0x2E, 0x63, 0x6F, 0x6D
+};
 
 /**
  * Initialize DPI bypass
@@ -374,6 +381,22 @@ NfqueueVerdict dpi_bypass_process_packet(NfqueuePacket* packet, void* user_data)
     int result = -1;
     
     switch (g_bypass.settings.method) {
+        case BYPASS_GECIT_FAKE:
+            if (packet->dst_port != 443) {
+                LOGD("[GECIT-FAKE] SKIP: method is HTTPS-only, accepting original");
+                desync_flow_forget(ip, tcp);
+                return NFQUEUE_ACCEPT;
+            }
+            result = apply_gecit_fake_client_hello(packet->payload, packet->payload_len, packet->dst_ip);
+            if (result == 0) {
+                pthread_mutex_lock(&g_bypass.lock);
+                g_bypass.stats.packets_bypassed++;
+                pthread_mutex_unlock(&g_bypass.lock);
+                LOGI("[GECIT-FAKE] Fake ClientHello sent; accepting original ClientHello");
+                return NFQUEUE_ACCEPT;
+            }
+            break;
+
         case BYPASS_SPLIT:
             result = apply_split_with_injection(packet->payload, packet->payload_len, 
                                                 packet->dst_ip, false);
@@ -698,6 +721,76 @@ static uint8_t* create_tcp_fragment(uint8_t* orig_packet, uint32_t orig_len,
     
     *out_len = new_len;
     return new_packet;
+}
+
+/**
+ * Apply gecit-style fake ClientHello injection.
+ *
+ * The fake packet reuses the original connection tuple and TCP seq/ack, but
+ * replaces the payload with a deterministic TLS ClientHello whose SNI is
+ * www.google.com. A low TTL lets the fake reach the ISP DPI while avoiding the
+ * origin server; the original ClientHello is accepted afterwards unchanged.
+ */
+static int apply_gecit_fake_client_hello(uint8_t* payload, uint32_t len, uint32_t dst_ip) {
+    if (payload == NULL || len < 40) {
+        LOGE("[GECIT-FAKE] ERROR: Invalid payload");
+        return -1;
+    }
+
+    struct iphdr* ip = (struct iphdr*)payload;
+    uint32_t ip_hdr_len = ip->ihl * 4;
+    if (len < ip_hdr_len + sizeof(struct tcphdr)) {
+        LOGE("[GECIT-FAKE] ERROR: Packet too short for TCP header");
+        return -1;
+    }
+
+    struct tcphdr* tcp = (struct tcphdr*)(payload + ip_hdr_len);
+    uint32_t tcp_hdr_len = tcp->doff * 4;
+    uint32_t tcp_data_len = len - ip_hdr_len - tcp_hdr_len;
+    uint8_t* tcp_data = payload + ip_hdr_len + tcp_hdr_len;
+
+    if (!dpi_is_tls_client_hello(tcp_data, tcp_data_len)) {
+        LOGD("[GECIT-FAKE] SKIP: not a TLS ClientHello");
+        return -1;
+    }
+
+    uint32_t fake_len = 0;
+    uint8_t* fake_packet = create_tcp_fragment(
+        payload,
+        len,
+        (uint8_t*)GECIT_FAKE_CLIENT_HELLO,
+        sizeof(GECIT_FAKE_CLIENT_HELLO),
+        0,
+        &fake_len
+    );
+    if (fake_packet == NULL) {
+        LOGE("[GECIT-FAKE] ERROR: Could not create fake ClientHello packet");
+        return -1;
+    }
+
+    struct iphdr* fake_ip = (struct iphdr*)fake_packet;
+    uint8_t ttl = g_bypass.settings.fake_ttl;
+    if (ttl == 0) ttl = 8;
+    fake_ip->ttl = ttl;
+    fake_ip->check = 0;
+    fake_ip->check = calculate_ip_checksum(fake_ip);
+
+    struct tcphdr* fake_tcp = (struct tcphdr*)(fake_packet + (fake_ip->ihl * 4));
+    uint32_t fake_tcp_hdr_len = fake_tcp->doff * 4;
+    fake_tcp->check = 0;
+    fake_tcp->check = calculate_tcp_checksum(
+        fake_ip,
+        fake_tcp,
+        fake_packet + (fake_ip->ihl * 4) + fake_tcp_hdr_len,
+        sizeof(GECIT_FAKE_CLIENT_HELLO)
+    );
+
+    LOGI("[GECIT-FAKE] Sending low-TTL fake ClientHello: sni=%s ttl=%u seq=%u len=%u",
+         GECIT_FAKE_SNI, ttl, ntohl(fake_tcp->seq), fake_len);
+
+    int result = dpi_send_raw_packet(fake_packet, fake_len, dst_ip);
+    free(fake_packet);
+    return result;
 }
 
 /**

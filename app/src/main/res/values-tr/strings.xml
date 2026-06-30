@@ -51,6 +51,7 @@
     <string name="bypass_split">Split</string>
     <string name="bypass_disorder">Disorder</string>
     <string name="bypass_fake">Fake</string>
+    <string name="bypass_gecit_fake">Gecit Fake</string>
     
     <string name="bypass_https_desync">HTTPS Desync</string>
     <string name="bypass_https_desync_desc">Gelişmiş: güvenli bağlantıları (TLS) işle. Uyumluluk için varsayılan olarak kapalıdır.</string>
@@ -62,6 +63,7 @@
     <string name="advanced_split_position_value">%d. byte</string>
     <string name="advanced_fragment_count">Parça Sayısı</string>
     <string name="advanced_fake_hex">Fake Hex Verisi</string>
+    <string name="advanced_fake_ttl">Fake TTL</string>
     <string name="advanced_delay">Gecikme (ms)</string>
     <string name="advanced_host_mixing">Host Karıştırma</string>
     <string name="advanced_host_mixing_desc">Host → hoSt</string>
